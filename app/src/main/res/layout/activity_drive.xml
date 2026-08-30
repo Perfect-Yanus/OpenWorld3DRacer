@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/black">
+
+    <!-- 3D Open World OpenGL ES Surface -->
+    <android.opengl.GLSurfaceView
+        android:id="@+id/glSurfaceDrive"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <!-- Top HUD Bar: Speedometer, Battery %, Motor Power, Surface -->
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_centerHorizontal="true"
+        android:layout_margin="16dp"
+        android:background="@color/hud_bg"
+        android:orientation="horizontal"
+        android:paddingHorizontal="20dp"
+        android:paddingVertical="10dp">
+
+        <TextView
+            android:id="@+id/tvSpeedometer"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="0 km/h"
+            android:textColor="@color/neon_blue"
+            android:textSize="26sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tvPowerKw"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="24dp"
+            android:text="0 kW"
+            android:textColor="@color/neon_yellow"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tvBatterySoc"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="24dp"
+            android:text="🔋 100%"
+            android:textColor="@color/neon_green"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tvSurfaceType"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="24dp"
+            android:text="🛣️ ASPHALT"
+            android:textColor="@color/white"
+            android:textSize="16sp" />
+
+        <TextView
+            android:id="@+id/tvDriftIndicator"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="20dp"
+            android:text="🔥 DRIFT!"
+            android:textColor="@color/neon_orange"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:visibility="gone" />
+    </LinearLayout>
+
+    <!-- Top Right Action Buttons: Camera Switch, Reset Car, Garage -->
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentEnd="true"
+        android:layout_margin="16dp"
+        android:orientation="horizontal">
+
+        <Button
+            android:id="@+id/btnCamSwitch"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:backgroundTint="@color/card_bg"
+            android:text="📷 CHASE"
+            android:textColor="@color/white" />
+
+        <Button
+            android:id="@+id/btnResetCar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:backgroundTint="@color/card_bg"
+            android:text="🔄 RESET"
+            android:textColor="@color/white" />
+
+        <Button
+            android:id="@+id/btnReturnGarage"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:backgroundTint="@color/card_bg"
+            android:text="🔧 GARAGE"
+            android:textColor="@color/neon_blue" />
+    </LinearLayout>
+
+    <!-- Steering Controls (Bottom Left) -->
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentStart="true"
+        android:layout_marginBottom="24dp"
+        android:layout_marginStart="24dp"
+        android:orientation="horizontal">
+
+        <Button
+            android:id="@+id/btnSteerLeft"
+            android:layout_width="85dp"
+            android:layout_height="85dp"
+            android:backgroundTint="#801E1E2C"
+            android:text="◄"
+            android:textColor="@color/white"
+            android:textSize="32sp" />
+
+        <Button
+            android:id="@+id/btnSteerRight"
+            android:layout_width="85dp"
+            android:layout_height="85dp"
+            android:layout_marginStart="16dp"
+            android:backgroundTint="#801E1E2C"
+            android:text="►"
+            android:textColor="@color/white"
+            android:textSize="32sp" />
+    </LinearLayout>
+
+    <!-- Pedal Controls (Bottom Right: Brake, Handbrake, Gas) -->
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentEnd="true"
+        android:layout_marginBottom="24dp"
+        android:layout_marginEnd="24dp"
+        android:orientation="horizontal">
+
+        <Button
+            android:id="@+id/btnHandbrake"
+            android:layout_width="75dp"
+            android:layout_height="75dp"
+            android:layout_gravity="bottom"
+            android:backgroundTint="#80FF1744"
+            android:text="DRIFT"
+            android:textColor="@color/white"
+            android:textSize="14sp"
+            android:textStyle="bold" />
+
+        <Button
+            android:id="@+id/btnBrake"
+            android:layout_width="85dp"
+            android:layout_height="95dp"
+            android:layout_gravity="bottom"
+            android:layout_marginStart="16dp"
+            android:backgroundTint="#80D81B60"
+            android:text="BRAKE\nREV"
+            android:textColor="@color/white"
+            android:textSize="14sp"
+            android:textStyle="bold" />
+
+        <Button
+            android:id="@+id/btnGas"
+            android:layout_width="95dp"
+            android:layout_height="120dp"
+            android:layout_gravity="bottom"
+            android:layout_marginStart="16dp"
+            android:backgroundTint="#8000E676"
+            android:text="GAS ⚡"
+            android:textColor="@color/black"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+</RelativeLayout>

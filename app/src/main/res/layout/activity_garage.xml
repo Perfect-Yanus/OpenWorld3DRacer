@@ -1,0 +1,351 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/dark_bg"
+    android:orientation="horizontal">
+
+    <!-- Left Panel: 3D Car Preview Surface & Stats -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1.1"
+        android:orientation="vertical">
+
+        <!-- 3D Car Preview Frame -->
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1">
+
+            <android.opengl.GLSurfaceView
+                android:id="@+id/glSurfaceGarage"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
+
+            <!-- Title Overlay -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_margin="16dp"
+                android:background="#A0000000"
+                android:padding="8dp"
+                android:text="🔧 EV CUSTOM GARAGE"
+                android:textColor="@color/neon_blue"
+                android:textSize="18sp"
+                android:textStyle="bold" />
+        </FrameLayout>
+
+        <!-- Stats Bar -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@color/card_bg"
+            android:orientation="horizontal"
+            android:padding="12dp">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+                <TextView
+                    android:id="@+id/tvStatAccel"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="0-100: 4.2s"
+                    android:textColor="@color/neon_yellow"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+                <TextView
+                    android:id="@+id/tvStatSpeed"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Top: 245 km/h"
+                    android:textColor="@color/white"
+                    android:textSize="13sp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+                <TextView
+                    android:id="@+id/tvStatRange"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Range: 480 km"
+                    android:textColor="@color/neon_green"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+                <TextView
+                    android:id="@+id/tvStatMass"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Mass: 1,650 kg"
+                    android:textColor="@color/white"
+                    android:textSize="13sp" />
+            </LinearLayout>
+
+            <Button
+                android:id="@+id/btnDriveNow"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:backgroundTint="@color/neon_blue"
+                android:text="START DRIVE 🏎️"
+                android:textColor="@color/black"
+                android:textStyle="bold" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- Right Panel: Tuning & Mode Controls -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="0.9"
+        android:background="@color/card_bg"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <!-- Mode Toggle Selector -->
+        <RadioGroup
+            android:id="@+id/rgMode"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:checkedButton="@id/rbEasyMode"
+            android:orientation="horizontal">
+
+            <RadioButton
+                android:id="@+id/rbEasyMode"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:buttonTint="@color/neon_blue"
+                android:text="Easy Presets (이지 모드)"
+                android:textColor="@color/white"
+                android:textStyle="bold" />
+
+            <RadioButton
+                android:id="@+id/rbExpertMode"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:buttonTint="@color/neon_blue"
+                android:text="Expert Tuning (커스텀)"
+                android:textColor="@color/white"
+                android:textStyle="bold" />
+        </RadioGroup>
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginVertical="8dp"
+            android:background="@color/card_stroke" />
+
+        <!-- Container for Easy Mode / Expert Mode Panels -->
+        <ScrollView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <!-- Easy Mode Preset Selector -->
+                <LinearLayout
+                    android:id="@+id/layoutEasyMode"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:visibility="visible">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Select EV Vehicle Preset:"
+                        android:textColor="@color/neon_blue"
+                        android:textSize="15sp"
+                        android:textStyle="bold" />
+
+                    <Button
+                        android:id="@+id/btnPresetCity"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:backgroundTint="@color/card_stroke"
+                        android:text="🏙️ City Commuter EV (130kW / FWD)"
+                        android:textColor="@color/white" />
+
+                    <Button
+                        android:id="@+id/btnPresetSport"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:backgroundTint="@color/card_stroke"
+                        android:text="🏎️ Sport Dual Motor EV (350kW / AWD)"
+                        android:textColor="@color/white" />
+
+                    <Button
+                        android:id="@+id/btnPresetOffroad"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:backgroundTint="@color/card_stroke"
+                        android:text="🏔️ Off-Road Beast 4WD (Low PSI Tires)"
+                        android:textColor="@color/white" />
+
+                    <Button
+                        android:id="@+id/btnPresetLongRange"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:backgroundTint="@color/card_stroke"
+                        android:text="🛣️ Long-Range Touring EV (130kWh Battery)"
+                        android:textColor="@color/white" />
+
+                    <Button
+                        android:id="@+id/btnPresetHypercar"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:backgroundTint="@color/card_stroke"
+                        android:text="⚡ Hypercar Quad EV (750kW / 1,250Nm)"
+                        android:textColor="@color/white" />
+                </LinearLayout>
+
+                <!-- Expert Custom Tuning Sliders -->
+                <LinearLayout
+                    android:id="@+id/layoutExpertMode"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:visibility="gone">
+
+                    <!-- Motor Layout -->
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="⚡ Motor Layout &amp; Power"
+                        android:textColor="@color/neon_blue"
+                        android:textStyle="bold" />
+
+                    <RadioGroup
+                        android:id="@+id/rgMotorLayout"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
+                        <RadioButton
+                            android:id="@+id/rbFWD"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="FWD"
+                            android:textColor="@color/white" />
+                        <RadioButton
+                            android:id="@+id/rbRWD"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="RWD"
+                            android:textColor="@color/white" />
+                        <RadioButton
+                            android:id="@+id/rbAWD"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="AWD Dual"
+                            android:textColor="@color/white" />
+                    </RadioGroup>
+
+                    <TextView
+                        android:id="@+id/tvLabelPower"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:text="Max Motor Power: 250 kW"
+                        android:textColor="@color/white" />
+                    <SeekBar
+                        android:id="@+id/sbPower"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:max="700"
+                        android:progress="150" />
+
+                    <!-- Battery Specs -->
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:text="🔋 Battery Capacity &amp; Weight"
+                        android:textColor="@color/neon_green"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/tvLabelBatteryCapacity"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Capacity: 75 kWh (Weight: 500 kg)"
+                        android:textColor="@color/white" />
+                    <SeekBar
+                        android:id="@+id/sbBatteryCapacity"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:max="100"
+                        android:progress="35" />
+
+                    <TextView
+                        android:id="@+id/tvLabelBatteryPos"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Battery Position (CoG Balance): Center"
+                        android:textColor="@color/white" />
+                    <SeekBar
+                        android:id="@+id/sbBatteryPos"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:max="100"
+                        android:progress="50" />
+
+                    <!-- Wheels & Tire Pressure -->
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:text="🛞 Wheels &amp; Tire Pressure (공기압)"
+                        android:textColor="@color/neon_yellow"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/tvLabelTirePsi"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Tire Pressure: 33 PSI"
+                        android:textColor="@color/white" />
+                    <SeekBar
+                        android:id="@+id/sbTirePsi"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:max="30"
+                        android:progress="13" />
+
+                    <TextView
+                        android:id="@+id/tvLabelTireWidth"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Tire Width: 235 mm"
+                        android:textColor="@color/white" />
+                    <SeekBar
+                        android:id="@+id/sbTireWidth"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:max="130"
+                        android:progress="40" />
+
+                </LinearLayout>
+            </LinearLayout>
+        </ScrollView>
+    </LinearLayout>
+</LinearLayout>

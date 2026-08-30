@@ -1,0 +1,26 @@
+<resources>
+    <string name="app_name">3D Open World Racer</string>
+    <string name="title_garage">EV Garage &amp; Custom Builder</string>
+    <string name="title_drive">Open World Free Drive</string>
+
+    <!-- Garage UI -->
+    <string name="mode_easy">Easy Preset Mode</string>
+    <string name="mode_expert">Expert Custom Design</string>
+
+    <string name="tab_motor">Motor Layout</string>
+    <string name="tab_battery">Battery Pack</string>
+    <string name="tab_wheels">Wheels &amp; Tires</string>
+    <string name="tab_suspension">Suspension &amp; Aero</string>
+
+    <string name="btn_drive">Start Driving 🏁</string>
+    <string name="btn_garage">Garage / Tune Car 🔧</string>
+    <string name="btn_reset_car">Reset Car</string>
+    <string name="btn_change_cam">Camera</string>
+
+    <!-- Vehicle Specs -->
+    <string name="preset_city">City Commuter EV</string>
+    <string name="preset_sport">Sport Dual Motor EV</string>
+    <string name="preset_offroad">Off-Road Beast 4WD</string>
+    <string name="preset_longrange">Long-Range Touring EV</string>
+    <string name="preset_hypercar">Hypercar Quad EV</string>
+</resources>

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+    <color name="dark_bg">#121212</color>
+    <color name="card_bg">#1E1E2C</color>
+    <color name="card_stroke">#2D2D44</color>
+
+    <color name="neon_blue">#00E5FF</color>
+    <color name="neon_green">#00E676</color>
+    <color name="neon_yellow">#FFEA00</color>
+    <color name="neon_orange">#FF9100</color>
+    <color name="neon_red">#FF1744</color>
+
+    <color name="hud_bg">#B0000000</color>
+    <color name="hud_accent">#00E5FF</color>
+</resources>
