@@ -2,6 +2,8 @@ package com.openworld.racer.model
 
 enum class ObjectType {
     ROAD,
+    ROAD_LINE,
+    CROSSWALK,
     SIDEWALK,
     BUILDING,
     SIGNBOARD,
