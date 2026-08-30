@@ -35,6 +35,18 @@
                 android:textColor="@color/neon_blue"
                 android:textSize="18sp"
                 android:textStyle="bold" />
+
+            <!-- Draw Custom Shape Button -->
+            <Button
+                android:id="@+id/btnDrawCustomBody"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="top|end"
+                android:layout_margin="16dp"
+                android:backgroundTint="@color/neon_yellow"
+                android:text="✏️ DRAW CUSTOM BODY"
+                android:textColor="@color/black"
+                android:textStyle="bold" />
         </FrameLayout>
 
         <!-- Stats Bar -->

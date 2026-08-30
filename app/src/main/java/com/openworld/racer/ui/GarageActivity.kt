@@ -45,6 +45,11 @@ class GarageActivity : AppCompatActivity() {
         setupExpertSliders()
         updateStatsUI()
 
+        binding.btnDrawCustomBody.setOnClickListener {
+            val intent = Intent(this, CustomCarDrawActivity::class.java)
+            startActivity(intent)
+        }
+
         binding.btnDriveNow.setOnClickListener {
             saveManager.saveVehicleConfig(currentConfig)
             val intent = Intent(this, DriveActivity::class.java)
@@ -106,7 +111,6 @@ class GarageActivity : AppCompatActivity() {
             updateStatsUI()
         }
 
-        // Power (100 ~ 800 kW)
         binding.sbPower.setOnSeekBarChangeListener(object : SimpleSeekListener() {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
                 currentConfig.maxPowerKw = 100f + progress.toFloat()
@@ -116,7 +120,6 @@ class GarageActivity : AppCompatActivity() {
             }
         })
 
-        // Battery Capacity (40 ~ 140 kWh)
         binding.sbBatteryCapacity.setOnSeekBarChangeListener(object : SimpleSeekListener() {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
                 currentConfig.batteryCapacityKwh = 40f + progress.toFloat()
@@ -127,7 +130,6 @@ class GarageActivity : AppCompatActivity() {
             }
         })
 
-        // Battery Position CoG (-0.8 ~ +0.8)
         binding.sbBatteryPos.setOnSeekBarChangeListener(object : SimpleSeekListener() {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
                 currentConfig.batteryPositionZ = (progress - 50) / 62.5f
@@ -141,7 +143,6 @@ class GarageActivity : AppCompatActivity() {
             }
         })
 
-        // Tire Pressure (20 ~ 50 PSI)
         binding.sbTirePsi.setOnSeekBarChangeListener(object : SimpleSeekListener() {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
                 currentConfig.tirePressurePsi = 20f + progress.toFloat()
@@ -150,7 +151,6 @@ class GarageActivity : AppCompatActivity() {
             }
         })
 
-        // Tire Width (195 ~ 325 mm)
         binding.sbTireWidth.setOnSeekBarChangeListener(object : SimpleSeekListener() {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
                 currentConfig.tireWidthMm = 195f + progress.toFloat()

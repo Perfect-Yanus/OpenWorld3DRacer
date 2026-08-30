@@ -5,9 +5,9 @@ import android.graphics.Color
 import android.opengl.GLES30
 import android.opengl.GLSurfaceView
 import android.opengl.Matrix
+import com.openworld.racer.audio.SoundManager
 import com.openworld.racer.model.EnvironmentObject
 import com.openworld.racer.model.ObjectType
-import com.openworld.racer.model.VehicleConfig
 import com.openworld.racer.physics.RaycastVehicle
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
@@ -19,6 +19,7 @@ import javax.microedition.khronos.opengles.GL10
 class GLRenderer(
     private val context: Context,
     val vehicle: RaycastVehicle,
+    private val soundManager: SoundManager? = null,
     private val listener: RenderListener? = null
 ) : GLSurfaceView.Renderer {
 
@@ -40,9 +41,6 @@ class GLRenderer(
     private lateinit var cubeVertexBuffer: FloatBuffer
     private lateinit var cubeIndexBuffer: ShortBuffer
 
-    // 3D Cylinder Mesh Buffers (for Wheels/Tires & Trees)
-    private lateinit var cylinderVertexBuffer: FloatBuffer
-
     override fun onSurfaceCreated(gl: GL10?, config: EGLConfig?) {
         GLES30.glClearColor(0.53f, 0.81f, 0.98f, 1.0f) // Sky Blue
         GLES30.glEnable(GLES30.GL_DEPTH_TEST)
@@ -50,7 +48,6 @@ class GLRenderer(
 
         initShaders()
         initCubeMeshData()
-        initCylinderMeshData()
 
         vehicle.resetPosition(0f, 0.2f, 0f, 0f)
     }
@@ -68,23 +65,31 @@ class GLRenderer(
         // 1. Update Vehicle Physics
         vehicle.update(dt, objects)
 
-        // 2. Update Camera
+        // 2. Update Sound Engine (Engine Whine, Drift Noise, Splash)
+        soundManager?.let {
+            it.currentSpeedKmh = vehicle.speedKmh
+            it.currentPowerKw = vehicle.motorPowerKwCurrent
+            it.isDrifting = vehicle.isDrifting
+            it.isInWater = vehicle.isInWater
+        }
+
+        // 3. Update Camera
         camera.updateCamera(vehicle.posX, vehicle.posY, vehicle.posZ, vehicle.headingAngle, dt)
 
-        // 3. Clear Canvas
+        // 4. Clear Canvas
         GLES30.glClear(GLES30.GL_COLOR_BUFFER_BIT or GLES30.GL_DEPTH_BUFFER_BIT)
         GLES30.glUseProgram(programId)
 
         // Directional Sun Light
         GLES30.glUniform3f(uLightDirHandle, 0.5f, 0.9f, 0.4f)
 
-        // 4. Render World Objects
+        // 5. Render World Objects
         renderEnvironmentObjects()
 
-        // 5. Render 3D EV Car & Components
+        // 6. Render 3D EV Car (Default Aerodynamic or Custom User Drawn Body!)
         renderElectricVehicle()
 
-        // 6. Notify HUD UI
+        // 7. Notify HUD UI
         listener?.onFrameUpdate(
             vehicle.speedKmh,
             vehicle.motorPowerKwCurrent,
@@ -119,39 +124,59 @@ class GLRenderer(
         Matrix.rotateM(carM, 0, vehicle.pitchAngle, 1f, 0f, 0f)
         Matrix.rotateM(carM, 0, vehicle.rollAngle, 0f, 0f, 1f)
 
-        // 1. Car Aerodynamic Main Body
-        val bodyM = carM.clone()
-        Matrix.scaleM(bodyM, 0, 2.1f, 0.85f, 4.4f)
-        drawCube(bodyM, carConfig.bodyColor)
+        if (carConfig.isCustomDrawnBody && carConfig.customProfile.isNotEmpty()) {
+            // RENDER USER CUSTOM DRAWN 3D CAR BODY!
+            val profile = carConfig.customProfile
+            val numSegments = profile.size
+            val carLength = 4.4f
+            val segLength = carLength / numSegments
+            val startZ = -carLength / 2f
 
-        // 2. Cabin Roof Glass Window
-        val roofM = carM.clone()
-        Matrix.translateM(roofM, 0, 0f, 0.65f, -0.2f)
-        Matrix.scaleM(roofM, 0, 1.8f, 0.65f, 2.2f)
-        drawCube(roofM, 0xFF151522.toInt())
+            for (i in 0 until numSegments) {
+                val h = profile[i].coerceIn(0.15f, 1.0f) * 1.4f
+                val sliceZ = startZ + i * segLength + segLength / 2f
 
-        // 3. Underfloor Battery Pack (Visible Battery Block underneath)
+                val segM = carM.clone()
+                Matrix.translateM(segM, 0, 0f, h / 2f - 0.2f, sliceZ)
+                Matrix.scaleM(segM, 0, 2.0f, h, segLength * 1.05f)
+
+                val col = if (i in 4..9 && h > 0.8f) 0xFF151522.toInt() else carConfig.bodyColor
+                drawCube(segM, col)
+            }
+        } else {
+            // Render Standard Aerodynamic 3D Body
+            val bodyM = carM.clone()
+            Matrix.scaleM(bodyM, 0, 2.1f, 0.85f, 4.4f)
+            drawCube(bodyM, carConfig.bodyColor)
+
+            val roofM = carM.clone()
+            Matrix.translateM(roofM, 0, 0f, 0.65f, -0.2f)
+            Matrix.scaleM(roofM, 0, 1.8f, 0.65f, 2.2f)
+            drawCube(roofM, 0xFF151522.toInt())
+        }
+
+        // Underfloor Battery Pack
         val battM = carM.clone()
         val battZOffset = carConfig.batteryPositionZ
         Matrix.translateM(battM, 0, 0f, -0.32f, battZOffset)
         Matrix.scaleM(battM, 0, 1.9f, 0.25f, 2.6f)
         drawCube(battM, 0xFF00E676.toInt()) // Green Battery Housing
 
-        // 4. Electric Motors (Front & Rear Motors)
+        // Electric Motors
         if (carConfig.motorLayout == "FWD" || carConfig.motorLayout == "AWD") {
             val frontMotorM = carM.clone()
             Matrix.translateM(frontMotorM, 0, 0f, -0.1f, -1.4f)
             Matrix.scaleM(frontMotorM, 0, 0.9f, 0.45f, 0.8f)
-            drawCube(frontMotorM, 0xFFFFEA00.toInt()) // Yellow Motor
+            drawCube(frontMotorM, 0xFFFFEA00.toInt())
         }
         if (carConfig.motorLayout == "RWD" || carConfig.motorLayout == "AWD") {
             val rearMotorM = carM.clone()
             Matrix.translateM(rearMotorM, 0, 0f, -0.1f, 1.4f)
             Matrix.scaleM(rearMotorM, 0, 0.9f, 0.45f, 0.8f)
-            drawCube(rearMotorM, 0xFFFFEA00.toInt()) // Yellow Motor
+            drawCube(rearMotorM, 0xFFFFEA00.toInt())
         }
 
-        // 5. Headlights & Taillights
+        // Headlights & Taillights
         val hlM1 = carM.clone()
         Matrix.translateM(hlM1, 0, -0.8f, 0.1f, -2.15f)
         Matrix.scaleM(hlM1, 0, 0.35f, 0.2f, 0.1f)
@@ -167,12 +192,10 @@ class GLRenderer(
         Matrix.scaleM(tlM, 0, 1.9f, 0.15f, 0.08f)
         drawCube(tlM, 0xFFFF1744.toInt())
 
-        // 6. 4 Wheels & Tires
+        // 4 Wheels & Tires
         val wheelPositions = arrayOf(
-            Pair(-1.15f, -1.35f), // Front Left
-            Pair(1.15f, -1.35f),  // Front Right
-            Pair(-1.15f, 1.35f),  // Rear Left
-            Pair(1.15f, 1.35f)    // Rear Right
+            Pair(-1.15f, -1.35f), Pair(1.15f, -1.35f),
+            Pair(-1.15f, 1.35f), Pair(1.15f, 1.35f)
         )
 
         val rimScale = carConfig.wheelDiameterInches * 0.045f
@@ -184,16 +207,13 @@ class GLRenderer(
             Matrix.translateM(wheelM, 0, wx, suspY, wz)
 
             if (i < 2) {
-                // Front steering angle
                 Matrix.rotateM(wheelM, 0, vehicle.steeringInput * 30f, 0f, 1f, 0f)
             }
             Matrix.rotateM(wheelM, 0, vehicle.wheelRotationDeg[i], 1f, 0f, 0f)
             Matrix.scaleM(wheelM, 0, 0.42f, rimScale, rimScale)
 
-            // Draw Rubber Tire (Black)
             drawCube(wheelM, 0xFF111111.toInt())
 
-            // Draw Inner Metallic Rim
             val rimM = wheelM.clone()
             Matrix.scaleM(rimM, 0, 0.8f, 0.65f, 0.65f)
             drawCube(rimM, carConfig.rimColor)
@@ -273,12 +293,12 @@ class GLRenderer(
         )
 
         val indices = shortArrayOf(
-            0, 1, 2,  0, 2, 3, // Front
-            1, 5, 6,  1, 6, 2, // Right
-            5, 4, 7,  5, 7, 6, // Back
-            4, 0, 3,  4, 3, 7, // Left
-            3, 2, 6,  3, 6, 7, // Top
-            4, 5, 1,  4, 1, 0  // Bottom
+            0, 1, 2,  0, 2, 3,
+            1, 5, 6,  1, 6, 2,
+            5, 4, 7,  5, 7, 6,
+            4, 0, 3,  4, 3, 7,
+            3, 2, 6,  3, 6, 7,
+            4, 5, 1,  4, 1, 0
         )
 
         cubeVertexBuffer = ByteBuffer.allocateDirect(vertices.size * 4)
@@ -292,14 +312,5 @@ class GLRenderer(
             .asShortBuffer()
             .put(indices)
         cubeIndexBuffer.position(0)
-    }
-
-    private fun initCylinderMeshData() {
-        val cylVertices = FloatArray(36 * 3)
-        cylinderVertexBuffer = ByteBuffer.allocateDirect(cylVertices.size * 4)
-            .order(ByteOrder.nativeOrder())
-            .asFloatBuffer()
-            .put(cylVertices)
-        cylinderVertexBuffer.position(0)
     }
 }

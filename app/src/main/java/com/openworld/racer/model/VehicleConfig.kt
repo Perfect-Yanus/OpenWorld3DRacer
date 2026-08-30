@@ -2,11 +2,17 @@ package com.openworld.racer.model
 
 import java.io.Serializable
 import kotlin.math.pow
-import kotlin.math.sqrt
 
 data class VehicleConfig(
     var isEasyMode: Boolean = true,
     var presetName: String = "City Commuter EV",
+
+    // Custom Car Shape Drawing Profile (16 Normalized Height Points 0.0 ~ 1.0)
+    var isCustomDrawnBody: Boolean = false,
+    var customProfile: FloatArray = floatArrayOf(
+        0.35f, 0.45f, 0.55f, 0.70f, 0.95f, 1.00f, 1.00f, 0.95f,
+        0.90f, 0.85f, 0.65f, 0.55f, 0.50f, 0.45f, 0.40f, 0.35f
+    ),
 
     // Motor Tuning
     var motorLayout: String = "RWD", // "FWD", "RWD", "AWD"
@@ -34,6 +40,17 @@ data class VehicleConfig(
     var rimColor: Int = 0xFFCCCCCC.toInt()
 ) : Serializable {
 
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+        other as VehicleConfig
+        return customProfile.contentEquals(other.customProfile)
+    }
+
+    override fun hashCode(): Int {
+        return customProfile.contentHashCode()
+    }
+
     // Calculate Total Vehicle Weight in kg
     fun getTotalMassKg(): Float {
         val baseChassisMass = 750f
@@ -57,43 +74,36 @@ data class VehicleConfig(
     // Tire Cornering & Acceleration Grip Coefficient (0.7 ~ 1.6)
     fun getTireGripFactor(surfaceType: String = "ASPHALT"): Float {
         val widthFactor = tireWidthMm / 225f
-
-        // Optimal PSI is around 32-35 PSI for Asphalt, 22-26 PSI for Dirt/Offroad
         val psiFactor = if (surfaceType == "DIRT") {
             1.2f - ((tirePressurePsi - 24f).pow(2) / 400f)
         } else {
             1.3f - ((tirePressurePsi - 33f).pow(2) / 500f)
         }
-
         val baseGrip = if (surfaceType == "DIRT") 0.75f else 1.15f
         return (baseGrip * widthFactor * psiFactor.coerceIn(0.6f, 1.3f)).coerceIn(0.5f, 1.8f)
     }
 
-    // Rolling resistance coefficient (Lower PSI = Higher Resistance)
+    // Rolling resistance coefficient
     fun getRollingResistance(): Float {
         return 0.015f + (35f - tirePressurePsi.coerceIn(20f, 50f)) * 0.0003f
     }
 
-    // Estimated 0-100 km/h acceleration time in seconds
+    // Estimated 0-100 km/h acceleration time
     fun getZeroToHundredSec(): Float {
         val mass = getTotalMassKg()
         val torque = maxTorqueNm * (if (motorLayout == "AWD") 1.2f else 1.0f)
         val grip = getTireGripFactor("ASPHALT")
-
         val maxForceByTraction = mass * 9.81f * grip
         val forceByTorque = (torque * 8.0f) / (wheelDiameterInches * 0.0254f / 2f)
         val effectiveForce = minOf(maxForceByTraction, forceByTorque)
-
         val accel = effectiveForce / mass
-        val targetVelMs = 27.78f // 100 km/h
-        return (targetVelMs / accel).coerceIn(1.9f, 12.0f)
+        return (27.78f / accel).coerceIn(1.9f, 12.0f)
     }
 
     // Top Speed in km/h
     fun getTopSpeedKmh(): Float {
         val powerWatt = maxPowerKw * 1000f
-        // Drag limit approximation
-        val CdA = 0.65f - (downforceKg * 0.0005f)
+        val CdA = 0.55f + (downforceKg * 0.0005f)
         val maxVelMs = (powerWatt / (0.5f * 1.225f * CdA)).pow(1f / 3f)
         return (maxVelMs * 3.6f).coerceIn(120f, 380f)
     }
@@ -103,14 +113,13 @@ data class VehicleConfig(
         val mass = getTotalMassKg()
         val rollingCoeff = getRollingResistance()
         val energyPerKmWh = (mass * rollingCoeff * 9.81f + 120f) * 0.65f
-        val kwhPerKm = energyPerKmWh / 1000f
-        return (batteryCapacityKwh / kwhPerKm).coerceIn(150f, 850f)
+        return (batteryCapacityKwh / (energyPerKmWh / 1000f)).coerceIn(150f, 850f)
     }
 
-    // Apply Presets for Easy Mode
     fun applyEasyPreset(preset: String) {
         this.isEasyMode = true
         this.presetName = preset
+        this.isCustomDrawnBody = false
         when (preset) {
             "City Commuter EV" -> {
                 motorLayout = "FWD"
@@ -154,8 +163,8 @@ data class VehicleConfig(
                 batteryPositionZ = -0.1f
                 wheelDiameterInches = 18f
                 tireWidthMm = 285f
-                tirePressurePsi = 24f // Lower pressure for off-road traction!
-                suspensionStiffness = 0.35f // Plush long travel suspension
+                tirePressurePsi = 24f
+                suspensionStiffness = 0.35f
                 rideHeightCm = 22f
                 downforceKg = 40f
                 bodyColor = 0xFFFF9100.toInt()
@@ -170,7 +179,7 @@ data class VehicleConfig(
                 batteryPositionZ = -0.2f
                 wheelDiameterInches = 18f
                 tireWidthMm = 235f
-                tirePressurePsi = 38f // High PSI for range optimization
+                tirePressurePsi = 38f
                 suspensionStiffness = 0.5f
                 rideHeightCm = 15f
                 downforceKg = 30f

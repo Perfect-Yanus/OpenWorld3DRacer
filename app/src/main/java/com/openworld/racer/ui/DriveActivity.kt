@@ -7,6 +7,7 @@ import android.os.Bundle
 import android.view.MotionEvent
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
+import com.openworld.racer.audio.SoundManager
 import com.openworld.racer.databinding.ActivityDriveBinding
 import com.openworld.racer.engine3d.CameraMode
 import com.openworld.racer.engine3d.GLRenderer
@@ -20,6 +21,7 @@ class DriveActivity : AppCompatActivity(), GLRenderer.RenderListener {
     private lateinit var binding: ActivityDriveBinding
     private lateinit var saveManager: GameSaveManager
     private lateinit var currentConfig: VehicleConfig
+    private val soundManager = SoundManager()
 
     private lateinit var vehicle: RaycastVehicle
     private lateinit var renderer: GLRenderer
@@ -34,7 +36,7 @@ class DriveActivity : AppCompatActivity(), GLRenderer.RenderListener {
         currentConfig = saveManager.loadVehicleConfig()
 
         vehicle = RaycastVehicle(currentConfig)
-        renderer = GLRenderer(this, vehicle, listener = this)
+        renderer = GLRenderer(this, vehicle, soundManager = soundManager, listener = this)
 
         binding.glSurfaceDrive.setEGLContextClientVersion(3)
         binding.glSurfaceDrive.setRenderer(renderer)
@@ -75,7 +77,6 @@ class DriveActivity : AppCompatActivity(), GLRenderer.RenderListener {
 
     @SuppressLint("ClickableViewAccessibility")
     private fun setupTouchControls() {
-        // Steering Left
         binding.btnSteerLeft.setOnTouchListener { _, event ->
             when (event.action) {
                 MotionEvent.ACTION_DOWN, MotionEvent.ACTION_MOVE -> vehicle.steeringInput = -1.0f
@@ -84,7 +85,6 @@ class DriveActivity : AppCompatActivity(), GLRenderer.RenderListener {
             true
         }
 
-        // Steering Right
         binding.btnSteerRight.setOnTouchListener { _, event ->
             when (event.action) {
                 MotionEvent.ACTION_DOWN, MotionEvent.ACTION_MOVE -> vehicle.steeringInput = 1.0f
@@ -93,7 +93,6 @@ class DriveActivity : AppCompatActivity(), GLRenderer.RenderListener {
             true
         }
 
-        // Gas Accelerator
         binding.btnGas.setOnTouchListener { _, event ->
             when (event.action) {
                 MotionEvent.ACTION_DOWN, MotionEvent.ACTION_MOVE -> vehicle.throttleInput = 1.0f
@@ -102,7 +101,6 @@ class DriveActivity : AppCompatActivity(), GLRenderer.RenderListener {
             true
         }
 
-        // Brake / Reverse
         binding.btnBrake.setOnTouchListener { _, event ->
             when (event.action) {
                 MotionEvent.ACTION_DOWN, MotionEvent.ACTION_MOVE -> vehicle.brakeInput = 1.0f
@@ -111,7 +109,6 @@ class DriveActivity : AppCompatActivity(), GLRenderer.RenderListener {
             true
         }
 
-        // Handbrake / Drift
         binding.btnHandbrake.setOnTouchListener { _, event ->
             when (event.action) {
                 MotionEvent.ACTION_DOWN, MotionEvent.ACTION_MOVE -> vehicle.handbrakeInput = true
@@ -147,10 +144,12 @@ class DriveActivity : AppCompatActivity(), GLRenderer.RenderListener {
     override fun onResume() {
         super.onResume()
         binding.glSurfaceDrive.onResume()
+        soundManager.startAudio()
     }
 
     override fun onPause() {
         super.onPause()
         binding.glSurfaceDrive.onPause()
+        soundManager.stopAudio()
     }
 }
