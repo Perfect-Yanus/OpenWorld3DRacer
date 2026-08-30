@@ -20,11 +20,12 @@ class CustomCarDrawActivity : AppCompatActivity() {
         saveManager = GameSaveManager(this)
         val config = saveManager.loadVehicleConfig()
 
-        // Load existing drawn points if available
+        // Load existing drawn points safely
         if (config.isCustomDrawnBody) {
+            val safeProfile = config.getSafeCustomProfile()
             for (i in 0 until binding.carDrawCanvas.numPoints) {
-                if (i < config.customProfile.size) {
-                    binding.carDrawCanvas.profilePoints[i] = config.customProfile[i]
+                if (i < safeProfile.size) {
+                    binding.carDrawCanvas.profilePoints[i] = safeProfile[i]
                 }
             }
             binding.carDrawCanvas.invalidate()

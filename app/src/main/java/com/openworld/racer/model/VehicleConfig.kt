@@ -9,7 +9,7 @@ data class VehicleConfig(
 
     // Custom Car Shape Drawing Profile (16 Normalized Height Points 0.0 ~ 1.0)
     var isCustomDrawnBody: Boolean = false,
-    var customProfile: FloatArray = floatArrayOf(
+    var customProfile: FloatArray? = floatArrayOf(
         0.35f, 0.45f, 0.55f, 0.70f, 0.95f, 1.00f, 1.00f, 0.95f,
         0.90f, 0.85f, 0.65f, 0.55f, 0.50f, 0.45f, 0.40f, 0.35f
     ),
@@ -40,15 +40,29 @@ data class VehicleConfig(
     var rimColor: Int = 0xFFCCCCCC.toInt()
 ) : Serializable {
 
+    fun getSafeCustomProfile(): FloatArray {
+        val prof = customProfile
+        return if (prof != null && prof.size == 16) {
+            prof
+        } else {
+            floatArrayOf(
+                0.35f, 0.45f, 0.55f, 0.70f, 0.95f, 1.00f, 1.00f, 0.95f,
+                0.90f, 0.85f, 0.65f, 0.55f, 0.50f, 0.45f, 0.40f, 0.35f
+            ).also { customProfile = it }
+        }
+    }
+
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
         other as VehicleConfig
-        return customProfile.contentEquals(other.customProfile)
+        val p1 = getSafeCustomProfile()
+        val p2 = other.getSafeCustomProfile()
+        return p1.contentEquals(p2)
     }
 
     override fun hashCode(): Int {
-        return customProfile.contentHashCode()
+        return getSafeCustomProfile().contentHashCode()
     }
 
     // Calculate Total Vehicle Weight in kg

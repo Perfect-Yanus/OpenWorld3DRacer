@@ -38,7 +38,7 @@ class DriveActivity : AppCompatActivity(), GLRenderer.RenderListener {
         vehicle = RaycastVehicle(currentConfig)
         renderer = GLRenderer(this, vehicle, soundManager = soundManager, listener = this)
 
-        binding.glSurfaceDrive.setEGLContextClientVersion(3)
+        binding.glSurfaceDrive.setEGLContextClientVersion(2)
         binding.glSurfaceDrive.setRenderer(renderer)
         binding.glSurfaceDrive.renderMode = GLSurfaceView.RENDERMODE_CONTINUOUSLY
 
