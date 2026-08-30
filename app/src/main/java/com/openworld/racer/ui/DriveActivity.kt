@@ -39,6 +39,7 @@ class DriveActivity : AppCompatActivity(), GLRenderer.RenderListener {
         renderer = GLRenderer(this, vehicle, soundManager = soundManager, listener = this)
 
         binding.glSurfaceDrive.setEGLContextClientVersion(2)
+        binding.glSurfaceDrive.setEGLConfigChooser(8, 8, 8, 8, 16, 0)
         binding.glSurfaceDrive.setRenderer(renderer)
         binding.glSurfaceDrive.renderMode = GLSurfaceView.RENDERMODE_CONTINUOUSLY
 

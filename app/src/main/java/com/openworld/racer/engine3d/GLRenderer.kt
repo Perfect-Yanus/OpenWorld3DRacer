@@ -30,6 +30,7 @@ class GLRenderer(
     private val objects = WorldMapGenerator.generateOpenWorldObjects()
 
     private var programId = 0
+    private var aPositionHandle = -1
     private var uMVPMatrixHandle = -1
     private var uColorHandle = -1
 
@@ -244,8 +245,9 @@ class GLRenderer(
         val a = Color.alpha(colorHex) / 255.0f
         GLES20.glUniform4f(uColorHandle, r, g, b, a)
 
-        GLES20.glVertexAttribPointer(0, 3, GLES20.GL_FLOAT, false, 3 * 4, cubeVertexBuffer)
-        GLES20.glEnableVertexAttribArray(0)
+        val posHandle = if (aPositionHandle >= 0) aPositionHandle else 0
+        GLES20.glVertexAttribPointer(posHandle, 3, GLES20.GL_FLOAT, false, 3 * 4, cubeVertexBuffer)
+        GLES20.glEnableVertexAttribArray(posHandle)
 
         GLES20.glDrawElements(GLES20.GL_TRIANGLES, 36, GLES20.GL_UNSIGNED_SHORT, cubeIndexBuffer)
     }
@@ -271,11 +273,13 @@ class GLRenderer(
         val fragmentShader = loadShader(GLES20.GL_FRAGMENT_SHADER, fragmentShaderCode)
 
         programId = GLES20.glCreateProgram().also {
+            GLES20.glBindAttribLocation(it, 0, "aPosition")
             GLES20.glAttachShader(it, vertexShader)
             GLES20.glAttachShader(it, fragmentShader)
             GLES20.glLinkProgram(it)
         }
 
+        aPositionHandle = GLES20.glGetAttribLocation(programId, "aPosition")
         uMVPMatrixHandle = GLES20.glGetUniformLocation(programId, "uMVPMatrix")
         uColorHandle = GLES20.glGetUniformLocation(programId, "uColor")
     }

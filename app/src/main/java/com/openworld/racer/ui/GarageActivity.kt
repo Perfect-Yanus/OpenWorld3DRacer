@@ -37,6 +37,7 @@ class GarageActivity : AppCompatActivity() {
         renderer.camera.mode = CameraMode.FREE_ORBIT
 
         binding.glSurfaceGarage.setEGLContextClientVersion(2)
+        binding.glSurfaceGarage.setEGLConfigChooser(8, 8, 8, 8, 16, 0)
         binding.glSurfaceGarage.setRenderer(renderer)
         binding.glSurfaceGarage.renderMode = GLSurfaceView.RENDERMODE_CONTINUOUSLY
 

@@ -85,7 +85,8 @@ object WorldMapGenerator {
                     val bHeight = 25f + ((idx + bx + bz) * 7.5f % 45f)
                     val bWidth = 32f
                     val bDepth = 32f
-                    val color = buildingColors[(bx * 3 + bz + idx).coerceIn(0, buildingColors.size - 1) % buildingColors.size]
+                    val colorIdx = Math.floorMod(bx * 3 + bz + idx, buildingColors.size)
+                    val color = buildingColors[colorIdx]
 
                     // Building Box
                     objects.add(
@@ -100,7 +101,8 @@ object WorldMapGenerator {
                     )
 
                     // Illuminated Billboard Sign (간판) on front facade
-                    val signColor = billboardColors[(idx + bx) % billboardColors.size]
+                    val signColorIdx = Math.floorMod(idx + bx, billboardColors.size)
+                    val signColor = billboardColors[signColorIdx]
                     objects.add(
                         EnvironmentObject(
                             id = "sign_${bx}_${bz}_$idx",
