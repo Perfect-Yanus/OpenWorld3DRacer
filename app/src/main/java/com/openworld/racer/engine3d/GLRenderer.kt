@@ -195,85 +195,124 @@ class GLRenderer(
                 drawCube(segM, col)
             }
         } else {
-            // Sleek Aerodynamic 3D EV Sports Car Body
-            // 1. Lower Body Main Chassis
+            // High-End Commercial EV Supercar Body
+            // 1. Lower Monocoque Chassis
             val bodyM = carM.clone()
-            Matrix.scaleM(bodyM, 0, 2.1f, 0.45f, 4.4f)
+            Matrix.scaleM(bodyM, 0, 2.25f, 0.40f, 4.6f)
             drawCube(bodyM, carConfig.bodyColor)
 
-            // 2. Front Nose Hood Slope (Wedge)
+            // 2. Muscular Flared Overfenders (Wide-Body Wheel Arches)
+            val fenderPositions = arrayOf(
+                Pair(-1.18f, -1.35f), Pair(1.18f, -1.35f),
+                Pair(-1.18f, 1.35f), Pair(1.18f, 1.35f)
+            )
+            for ((fx, fz) in fenderPositions) {
+                val fM = carM.clone()
+                Matrix.translateM(fM, 0, fx, 0.05f, fz)
+                Matrix.scaleM(fM, 0, 0.35f, 0.42f, 1.15f)
+                drawCube(fM, carConfig.bodyColor)
+            }
+
+            // 3. Front Nose Hood Slope (Wedge) & Air Vents
             val hoodM = carM.clone()
-            Matrix.translateM(hoodM, 0, 0f, 0.15f, -1.6f)
-            Matrix.scaleM(hoodM, 0, 2.05f, 0.40f, 1.2f)
+            Matrix.translateM(hoodM, 0, 0f, 0.15f, -1.7f)
+            Matrix.scaleM(hoodM, 0, 2.15f, 0.38f, 1.3f)
             drawWedge(hoodM, carConfig.bodyColor)
 
-            // 3. Slanted Glass Windshield (Wedge)
+            // 4. Slanted Glass Windshield (Wedge)
             val windshieldM = carM.clone()
-            Matrix.translateM(windshieldM, 0, 0f, 0.50f, -0.6f)
-            Matrix.scaleM(windshieldM, 0, 1.85f, 0.55f, 1.0f)
-            drawWedge(windshieldM, 0xFF0A192F.toInt()) // Tinted Dark Blue Glass
+            Matrix.translateM(windshieldM, 0, 0f, 0.52f, -0.65f)
+            Matrix.scaleM(windshieldM, 0, 1.90f, 0.58f, 1.1f)
+            drawWedge(windshieldM, 0xFF0B132B.toInt()) // Tinted Dark Blue Glass
 
-            // 4. Roof Cabin & Pillars
+            // 5. Panoramic Roof Cockpit & Carbon Pillars
             val roofM = carM.clone()
-            Matrix.translateM(roofM, 0, 0f, 0.65f, 0.2f)
-            Matrix.scaleM(roofM, 0, 1.80f, 0.50f, 1.5f)
-            drawCube(roofM, 0xFF111625.toInt()) // Gloss Black Roof
+            Matrix.translateM(roofM, 0, 0f, 0.68f, 0.2f)
+            Matrix.scaleM(roofM, 0, 1.85f, 0.52f, 1.6f)
+            drawCube(roofM, 0xFF070A10.toInt()) // Gloss Black Canopy
 
-            // 5. Rear Hatch Slope (Wedge rotated 180 deg)
+            // 6. Fastback Rear Sloped Glass Window
             val rearSlopeM = carM.clone()
-            Matrix.translateM(rearSlopeM, 0, 0f, 0.50f, 1.45f)
+            Matrix.translateM(rearSlopeM, 0, 0f, 0.52f, 1.55f)
             Matrix.rotateM(rearSlopeM, 0, 180f, 0f, 1f, 0f)
-            Matrix.scaleM(rearSlopeM, 0, 1.80f, 0.50f, 1.0f)
+            Matrix.scaleM(rearSlopeM, 0, 1.85f, 0.52f, 1.1f)
             drawWedge(rearSlopeM, carConfig.bodyColor)
 
-            // 6. Front Bumper Lip Splitter
+            // 7. Aerodynamic Side Winglet Mirrors
+            val mirrorLeft = carM.clone()
+            Matrix.translateM(mirrorLeft, 0, -1.25f, 0.55f, -0.6f)
+            Matrix.scaleM(mirrorLeft, 0, 0.25f, 0.12f, 0.18f)
+            drawCube(mirrorLeft, 0xFF1E293B.toInt())
+
+            val mirrorRight = carM.clone()
+            Matrix.translateM(mirrorRight, 0, 1.25f, 0.55f, -0.6f)
+            Matrix.scaleM(mirrorRight, 0, 0.25f, 0.12f, 0.18f)
+            drawCube(mirrorRight, 0xFF1E293B.toInt())
+
+            // 8. Front Bumper Carbon Splitter & Air Intakes
             val splitterM = carM.clone()
-            Matrix.translateM(splitterM, 0, 0f, -0.18f, -2.22f)
-            Matrix.scaleM(splitterM, 0, 2.15f, 0.12f, 0.25f)
-            drawCube(splitterM, 0xFF090A0F.toInt())
+            Matrix.translateM(splitterM, 0, 0f, -0.18f, -2.32f)
+            Matrix.scaleM(splitterM, 0, 2.30f, 0.10f, 0.30f)
+            drawCube(splitterM, 0xFF0F141C.toInt())
+
+            // 9. Active Rear Wing / Spoiler
+            val wingStanchionL = carM.clone()
+            Matrix.translateM(wingStanchionL, 0, -0.7f, 0.65f, 2.1f)
+            Matrix.scaleM(wingStanchionL, 0, 0.08f, 0.35f, 0.15f)
+            drawCube(wingStanchionL, 0xFF0B0F19.toInt())
+
+            val wingStanchionR = carM.clone()
+            Matrix.translateM(wingStanchionR, 0, 0.7f, 0.65f, 2.1f)
+            Matrix.scaleM(wingStanchionR, 0, 0.08f, 0.35f, 0.15f)
+            drawCube(wingStanchionR, 0xFF0B0F19.toInt())
+
+            val wingBlade = carM.clone()
+            Matrix.translateM(wingBlade, 0, 0f, 0.82f, 2.1f)
+            Matrix.scaleM(wingBlade, 0, 2.20f, 0.08f, 0.40f)
+            drawCube(wingBlade, 0xFF0B0F19.toInt())
         }
 
         // Underfloor Battery Pack
         val battM = carM.clone()
         val battZOffset = carConfig.batteryPositionZ
         Matrix.translateM(battM, 0, 0f, -0.28f, battZOffset)
-        Matrix.scaleM(battM, 0, 1.95f, 0.20f, 2.6f)
+        Matrix.scaleM(battM, 0, 2.05f, 0.20f, 2.7f)
         drawCube(battM, 0xFF00E676.toInt()) // Green Energy Pack
 
         // Electric Motors
         if (carConfig.motorLayout == "FWD" || carConfig.motorLayout == "AWD") {
             val frontMotorM = carM.clone()
             Matrix.translateM(frontMotorM, 0, 0f, -0.1f, -1.4f)
-            Matrix.scaleM(frontMotorM, 0, 0.85f, 0.40f, 0.75f)
+            Matrix.scaleM(frontMotorM, 0, 0.90f, 0.40f, 0.80f)
             drawCube(frontMotorM, 0xFFFFEA00.toInt())
         }
         if (carConfig.motorLayout == "RWD" || carConfig.motorLayout == "AWD") {
             val rearMotorM = carM.clone()
             Matrix.translateM(rearMotorM, 0, 0f, -0.1f, 1.4f)
-            Matrix.scaleM(rearMotorM, 0, 0.85f, 0.40f, 0.75f)
+            Matrix.scaleM(rearMotorM, 0, 0.90f, 0.40f, 0.80f)
             drawCube(rearMotorM, 0xFFFFEA00.toInt())
         }
 
-        // Headlights (Cyan LED Strips) & Rear Lightbar (Glowing Red)
+        // Laser Matrix Headlights (Cyan LED) & Continuous Rear Lightbar (Neon Red)
         val hlM1 = carM.clone()
-        Matrix.translateM(hlM1, 0, -0.75f, 0.12f, -2.18f)
-        Matrix.scaleM(hlM1, 0, 0.40f, 0.12f, 0.10f)
-        drawCube(hlM1, 0xFF00E5FF.toInt())
+        Matrix.translateM(hlM1, 0, -0.80f, 0.14f, -2.28f)
+        Matrix.scaleM(hlM1, 0, 0.45f, 0.10f, 0.12f)
+        drawCube(hlM1, 0xFF00F0FF.toInt())
 
         val hlM2 = carM.clone()
-        Matrix.translateM(hlM2, 0, 0.75f, 0.12f, -2.18f)
-        Matrix.scaleM(hlM2, 0, 0.40f, 0.12f, 0.10f)
-        drawCube(hlM2, 0xFF00E5FF.toInt())
+        Matrix.translateM(hlM2, 0, 0.80f, 0.14f, -2.28f)
+        Matrix.scaleM(hlM2, 0, 0.45f, 0.10f, 0.12f)
+        drawCube(hlM2, 0xFF00F0FF.toInt())
 
         val tlM = carM.clone()
-        Matrix.translateM(tlM, 0, 0f, 0.15f, 2.20f)
-        Matrix.scaleM(tlM, 0, 1.95f, 0.12f, 0.08f)
-        drawCube(tlM, 0xFFFF1744.toInt())
+        Matrix.translateM(tlM, 0, 0f, 0.18f, 2.30f)
+        Matrix.scaleM(tlM, 0, 2.10f, 0.10f, 0.08f)
+        drawCube(tlM, 0xFFFF0055.toInt())
 
-        // 4 Round 16-Sided 3D Cylindrical Wheels & Alloy Rims
+        // 4 Round 16-Sided 3D Cylindrical Wheels, Rims & Brembo Calipers
         val wheelPositions = arrayOf(
-            Pair(-1.15f, -1.35f), Pair(1.15f, -1.35f),
-            Pair(-1.15f, 1.35f), Pair(1.15f, 1.35f)
+            Pair(-1.22f, -1.35f), Pair(1.22f, -1.35f),
+            Pair(-1.22f, 1.35f), Pair(1.22f, 1.35f)
         )
 
         val wheelDiameterScale = carConfig.wheelDiameterInches * 0.045f
@@ -293,18 +332,24 @@ class GLRenderer(
 
             // Outer Rubber Tire (3D Cylinder)
             val tireM = wheelM.clone()
-            Matrix.scaleM(tireM, 0, wheelDiameterScale, 0.42f, wheelDiameterScale)
-            drawCylinder(tireM, 0xFF181818.toInt()) // Dark Rubber
+            Matrix.scaleM(tireM, 0, wheelDiameterScale, 0.44f, wheelDiameterScale)
+            drawCylinder(tireM, 0xFF121214.toInt()) // Dark Rubber
 
-            // Inner Alloy Rim (3D Metallic Cylinder)
+            // Inner Metallic Alloy Rim (3D Cylinder)
             val rimM = wheelM.clone()
-            Matrix.scaleM(rimM, 0, wheelDiameterScale * 0.72f, 0.45f, wheelDiameterScale * 0.72f)
+            Matrix.scaleM(rimM, 0, wheelDiameterScale * 0.74f, 0.46f, wheelDiameterScale * 0.74f)
             drawCylinder(rimM, carConfig.rimColor)
 
-            // Brake Disc Accent (Red Caliper)
-            val brakeM = wheelM.clone()
-            Matrix.scaleM(brakeM, 0, wheelDiameterScale * 0.50f, 0.30f, wheelDiameterScale * 0.50f)
-            drawCylinder(brakeM, 0xFFFF3333.toInt())
+            // Steel Brake Disc
+            val discM = wheelM.clone()
+            Matrix.scaleM(discM, 0, wheelDiameterScale * 0.55f, 0.25f, wheelDiameterScale * 0.55f)
+            drawCylinder(discM, 0xFF64748B.toInt())
+
+            // High-Performance Red Brembo Brake Caliper Accent
+            val caliperM = wheelM.clone()
+            Matrix.translateM(caliperM, 0, 0.20f, 0.0f, 0.0f)
+            Matrix.scaleM(caliperM, 0, wheelDiameterScale * 0.35f, 0.32f, wheelDiameterScale * 0.35f)
+            drawCylinder(caliperM, 0xFFEF4444.toInt())
         }
     }
 

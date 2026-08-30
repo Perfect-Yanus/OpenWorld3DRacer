@@ -75,8 +75,18 @@ class RaycastVehicle(var config: VehicleConfig) {
         val lateralSpeed = velX * rightX + velZ * rightZ
         speedKmh = abs(forwardSpeed) * 3.6f
 
-        // Check Terrain Surface & Collisions
-        currentSurface = detectSurfaceAndCollision(environmentObjects)
+        // Check Terrain Surface & Resolve Collisions
+        val targetSurfaceY = resolveCollisionsAndDetectSurface(environmentObjects)
+
+        // Apply Gravity & Ground Clamping
+        if (posY > targetSurfaceY) {
+            velY -= 18.0f * dt // 18 m/s^2 gravity
+        }
+        posY += velY * dt
+        if (posY <= targetSurfaceY) {
+            posY = targetSurfaceY
+            velY = 0.0f
+        }
 
         // Tire Grip based on Surface & PSI
         var gripFactor = config.getTireGripFactor(currentSurface)
@@ -97,7 +107,7 @@ class RaycastVehicle(var config: VehicleConfig) {
 
             driveForce = engineForce.coerceAtMost(mass * 9.81f * gripFactor * 1.2f)
 
-            // Battery Consumption (Power Output in kW * time)
+            // Battery Consumption
             val instantaneousPowerKw = (abs(engineForce * forwardSpeed) / 1000f).coerceIn(0f, config.maxPowerKw)
             motorPowerKwCurrent = instantaneousPowerKw
             val energyUsedKwh = (instantaneousPowerKw * (dt / 3600f))
@@ -121,7 +131,7 @@ class RaycastVehicle(var config: VehicleConfig) {
         val totalLongitudinalForce = driveForce + brakeForce
 
         // Aerodynamic Drag & Rolling Resistance
-        val CdA = 0.55f + (config.downforceKg * 0.001f)
+        val CdA = 0.45f + (config.downforceKg * 0.0008f)
         val airDragForce = -0.5f * 1.225f * CdA * forwardSpeed * abs(forwardSpeed)
         val rollingResistanceForce = -config.getRollingResistance() * mass * 9.81f * (if (forwardSpeed >= 0) 1f else -1f)
 
@@ -164,58 +174,73 @@ class RaycastVehicle(var config: VehicleConfig) {
         posX += velX * dt
         posZ += velZ * dt
 
-        // Suspension pitch and roll simulation
-        val CoGZ = config.getCenterOfMassZ()
-        pitchAngle = pitchAngle * 0.9f + (-forwardAccel * 0.35f + CoGZ * 2.0f) * 0.1f
-        rollAngle = rollAngle * 0.9f + (lateralAccel * 0.40f) * 0.1f
+        // STABLE Pitch & Roll Angle Simulation (No sky flying!)
+        val targetPitch = (-forwardAccel * 0.10f).coerceIn(-10.0f, 10.0f)
+        pitchAngle = pitchAngle * 0.85f + targetPitch * 0.15f
+
+        val targetRoll = (lateralAccel * 0.08f).coerceIn(-8.0f, 8.0f)
+        rollAngle = rollAngle * 0.85f + targetRoll * 0.15f
 
         // Wheel Rotations
         val wheelRotSpeed = (forwardSpeed / (config.wheelDiameterInches * 0.0254f / 2f)) * dt * 57.2958f
         for (i in 0..3) {
             wheelRotationDeg[i] = (wheelRotationDeg[i] + wheelRotSpeed) % 360f
-            // Suspension compression bouncy effect
-            wheelSuspension[i] = (0.2f + sin((posX + posZ + i) * 2.0f) * 0.05f).coerceIn(0f, 1f)
+            wheelSuspension[i] = (0.2f + sin((posX + posZ + i) * 2.0f) * 0.03f).coerceIn(0f, 1f)
         }
     }
 
-    private fun detectSurfaceAndCollision(environmentObjects: List<EnvironmentObject>): String {
-        var surface = "ASPHALT"
+    private fun resolveCollisionsAndDetectSurface(environmentObjects: List<EnvironmentObject>): Float {
+        var targetY = 0.0f
+        currentSurface = "ASPHALT"
         isInWater = false
 
-        // Car collision radius ~ 1.5 meters
-        val carRadius = 1.5f
+        val carRadius = 1.2f
 
         for (obj in environmentObjects) {
-            if (obj.intersectsBoundingBox(posX, posY, posZ, carRadius)) {
+            val halfX = obj.sizeX / 2f + carRadius
+            val halfZ = obj.sizeZ / 2f + carRadius
+
+            val dx = posX - obj.posX
+            val dz = posZ - obj.posZ
+
+            if (abs(dx) < halfX && abs(dz) < halfZ) {
                 when (obj.type) {
-                    ObjectType.BUILDING, ObjectType.SIGNBOARD, ObjectType.LAMPPOST, ObjectType.TREE -> {
-                        // Bounce off solid collision object
-                        velX = -velX * 0.4f
-                        velZ = -velZ * 0.4f
-                        speedKmh *= 0.3f
+                    ObjectType.BUILDING, ObjectType.TREE, ObjectType.LAMPPOST, ObjectType.SIGNBOARD -> {
+                        if (obj.isCollidable) {
+                            // AABB Push-Out Collision Resolution (Prevents clipping & flying!)
+                            val overlapX = halfX - abs(dx)
+                            val overlapZ = halfZ - abs(dz)
+
+                            if (overlapX < overlapZ) {
+                                posX += if (dx > 0) overlapX else -overlapX
+                                velX = 0f
+                            } else {
+                                posZ += if (dz > 0) overlapZ else -overlapZ
+                                velZ = 0f
+                            }
+                            speedKmh *= 0.4f
+                        }
                     }
                     ObjectType.SIDEWALK -> {
-                        surface = "SIDEWALK"
-                        posY = 0.25f // Elevation step for curb
+                        currentSurface = "SIDEWALK"
+                        targetY = 0.12f // Curb height
                     }
                     ObjectType.SPEEDBUMP -> {
-                        posY = 0.15f
+                        targetY = 0.08f // Bump height
                     }
                     ObjectType.RIVER, ObjectType.LAKE -> {
-                        surface = "WATER"
+                        currentSurface = "WATER"
                         isInWater = true
-                        posY = -0.4f
+                        targetY = -0.3f // Water level
                     }
                     ObjectType.GRASS -> {
-                        surface = "DIRT"
+                        currentSurface = "DIRT"
                     }
                     else -> {}
                 }
             }
         }
-        if (surface == "ASPHALT" && posY > 0.05f) {
-            posY = max(0.0f, posY - 0.05f)
-        }
-        return surface
+
+        return targetY
     }
 }
