@@ -6,11 +6,14 @@ import android.opengl.GLES20
 import android.opengl.GLSurfaceView
 import android.opengl.Matrix
 import com.openworld.racer.audio.SoundManager
+import com.openworld.racer.model.CollectibleItem
 import com.openworld.racer.model.EnvironmentObject
+import com.openworld.racer.model.ItemType
 import com.openworld.racer.model.ObjectType
 import com.openworld.racer.physics.RaycastVehicle
 import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.opengles.GL10
+import kotlin.random.Random
 
 class GLRenderer(
     private val context: Context,
@@ -20,11 +23,25 @@ class GLRenderer(
 ) : GLSurfaceView.Renderer {
 
     interface RenderListener {
-        fun onFrameUpdate(speedKmh: Float, powerKw: Float, socPercent: Float, surface: String, isDrifting: Boolean)
+        fun onFrameUpdate(
+            speedKmh: Float,
+            powerKw: Float,
+            socPercent: Float,
+            surface: String,
+            isDrifting: Boolean,
+            nitroGauge: Float,
+            isNitroActive: Boolean,
+            totalScore: Int,
+            comboMultiplier: Int,
+            isAirborne: Boolean,
+            airTimeSeconds: Float,
+            stuntFeedbackText: String
+        )
     }
 
     val camera = Camera3D()
     private val objects = WorldMapGenerator.generateOpenWorldObjects()
+    private val collectibles = WorldMapGenerator.generateCollectibleItems()
 
     private var programId = 0
     private var aPositionHandle = -1
@@ -38,7 +55,8 @@ class GLRenderer(
 
     override fun onSurfaceCreated(gl: GL10?, config: EGLConfig?) {
         try {
-            GLES20.glClearColor(0.48f, 0.74f, 0.95f, 1.0f) // Vibrant Sky Blue
+            // Twilight Cyber-Dusk Sky Color
+            GLES20.glClearColor(0.08f, 0.09f, 0.18f, 1.0f)
             GLES20.glEnable(GLES20.GL_DEPTH_TEST)
             GLES20.glDepthFunc(GLES20.GL_LEQUAL)
 
@@ -64,8 +82,8 @@ class GLRenderer(
             val dt = ((now - lastTimeNs) / 1_000_000_000.0f).coerceIn(0.005f, 0.05f)
             lastTimeNs = now
 
-            // 1. Update Vehicle Physics
-            vehicle.update(dt, objects)
+            // 1. Update Vehicle Physics & Stunt Engine
+            vehicle.update(dt, objects, collectibles, soundManager)
 
             // 2. Update Sound Engine
             soundManager?.let {
@@ -73,10 +91,15 @@ class GLRenderer(
                 it.currentPowerKw = vehicle.motorPowerKwCurrent
                 it.isDrifting = vehicle.isDrifting
                 it.isInWater = vehicle.isInWater
+                it.isNitroActive = vehicle.isNitroActive
             }
 
-            // 3. Update Camera
-            camera.updateCamera(vehicle.posX, vehicle.posY, vehicle.posZ, vehicle.headingAngle, dt)
+            // 3. Update Camera with Stunt Airtime & Nitro FOV
+            camera.updateCamera(
+                vehicle.posX, vehicle.posY, vehicle.posZ,
+                vehicle.headingAngle, dt,
+                vehicle.isAirborne, vehicle.isNitroActive, vehicle.airTimeSeconds
+            )
 
             // 4. Clear Canvas
             GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT or GLES20.GL_DEPTH_BUFFER_BIT)
@@ -84,19 +107,29 @@ class GLRenderer(
                 GLES20.glUseProgram(programId)
             }
 
-            // 5. Render World Infrastructure & Buildings
+            // 5. Render World Track, Ramps & Buildings
             renderEnvironmentObjects()
 
-            // 6. Render Aerodynamic 3D EV Sports Car
+            // 6. Render Floating 3D Collectible Items (Gold Gems, Mega Stars, Nitro Fuel)
+            renderCollectibleItems()
+
+            // 7. Render 3D EV Supercar & Nitro Flame Exhausts
             renderElectricVehicle()
 
-            // 7. Notify HUD UI
+            // 8. Notify HUD UI
             listener?.onFrameUpdate(
                 vehicle.speedKmh,
                 vehicle.motorPowerKwCurrent,
                 vehicle.batterySocPercent,
                 vehicle.currentSurface,
-                vehicle.isDrifting
+                vehicle.isDrifting,
+                vehicle.nitroGauge,
+                vehicle.isNitroActive,
+                vehicle.totalScore,
+                vehicle.comboMultiplier,
+                vehicle.isAirborne,
+                vehicle.airTimeSeconds,
+                vehicle.stuntFeedbackText
             )
         } catch (e: Throwable) {
             e.printStackTrace()
@@ -113,6 +146,46 @@ class GLRenderer(
             }
 
             when (obj.type) {
+                ObjectType.JUMP_RAMP -> {
+                    // Stunt Launch Wedge Ramp
+                    val rampM = modelM.clone()
+                    Matrix.translateM(rampM, 0, 0f, obj.sizeY / 2f, 0f)
+                    Matrix.scaleM(rampM, 0, obj.sizeX, obj.sizeY, obj.sizeZ)
+                    drawWedge(rampM, obj.color)
+
+                    // Glowing Ramp Arrows / Lip Highlight
+                    val lipM = modelM.clone()
+                    Matrix.translateM(lipM, 0, 0f, obj.sizeY * 0.98f, -obj.sizeZ / 2f + 0.4f)
+                    Matrix.scaleM(lipM, 0, obj.sizeX * 0.95f, 0.25f, 0.8f)
+                    drawCube(lipM, 0xFF00E5FF.toInt()) // Neon Cyan Apex Lip
+                }
+
+                ObjectType.BOOST_PAD -> {
+                    // Floor Dash Pad
+                    val padM = modelM.clone()
+                    Matrix.scaleM(padM, 0, obj.sizeX, obj.sizeY, obj.sizeZ)
+                    drawCube(padM, obj.color) // Neon Electric Green
+
+                    // Glowing Center Arrow Chevrons
+                    val arrowM = modelM.clone()
+                    Matrix.translateM(arrowM, 0, 0f, 0.04f, 0f)
+                    Matrix.scaleM(arrowM, 0, obj.sizeX * 0.55f, 0.02f, obj.sizeZ * 0.7f)
+                    drawCube(arrowM, 0xFFFFFFFF.toInt()) // Crisp White Arrow
+                }
+
+                ObjectType.ARCH_GATE -> {
+                    // Overhead Neon Speed Gantry Beam
+                    val archM = modelM.clone()
+                    Matrix.scaleM(archM, 0, obj.sizeX, obj.sizeY, obj.sizeZ)
+                    drawCube(archM, obj.color)
+                }
+
+                ObjectType.RUMBLE_STRIP -> {
+                    // Checkered Red/White Curb
+                    Matrix.scaleM(modelM, 0, obj.sizeX, obj.sizeY, obj.sizeZ)
+                    drawCube(modelM, obj.color)
+                }
+
                 ObjectType.TREE -> {
                     // Trunk (3D Wood Cylinder)
                     val trunkM = modelM.clone()
@@ -129,7 +202,7 @@ class GLRenderer(
                     val foliage2M = modelM.clone()
                     Matrix.translateM(foliage2M, 0, 0f, obj.sizeY * 0.55f, 0f)
                     Matrix.scaleM(foliage2M, 0, obj.sizeX * 0.7f, obj.sizeY * 0.5f, obj.sizeZ * 0.7f)
-                    drawCone(foliage2M, 0xFF388E3C.toInt())
+                    drawCone(foliage2M, 0xFF34D399.toInt())
                 }
 
                 ObjectType.LAMPPOST -> {
@@ -142,22 +215,52 @@ class GLRenderer(
                     val lampHeadM = modelM.clone()
                     Matrix.translateM(lampHeadM, 0, 0.8f, obj.sizeY / 2f, 0f)
                     Matrix.scaleM(lampHeadM, 0, 1.4f, 0.35f, 0.6f)
-                    drawCube(lampHeadM, 0xFFFFF9C4.toInt()) // Glowing Yellow LED
+                    drawCube(lampHeadM, 0xFFFFD600.toInt()) // Glowing Amber Yellow LED
                 }
 
                 ObjectType.BUILDING -> {
                     Matrix.scaleM(modelM, 0, obj.sizeX, obj.sizeY, obj.sizeZ)
                     drawCube(modelM, obj.color)
-
-                    // Window Grid Highlight Line
-                    val windowM = modelM.clone()
-                    Matrix.scaleM(windowM, 0, 1.01f, 0.08f, 1.01f)
-                    drawCube(windowM, 0xFF80DEEA.toInt())
                 }
 
                 else -> {
                     Matrix.scaleM(modelM, 0, obj.sizeX, obj.sizeY, obj.sizeZ)
                     drawCube(modelM, obj.color)
+                }
+            }
+        }
+    }
+
+    private fun renderCollectibleItems() {
+        for (item in collectibles) {
+            if (item.isCollected) continue
+
+            val itemM = FloatArray(16)
+            Matrix.setIdentityM(itemM, 0)
+            Matrix.translateM(itemM, 0, item.posX, item.getRenderY(), item.posZ)
+            Matrix.rotateM(itemM, 0, item.currentRotationY, 0f, 1f, 0f)
+
+            when (item.type) {
+                ItemType.GOLD_GEM -> {
+                    // Sparkling 3D Gold Diamond
+                    Matrix.scaleM(itemM, 0, 1.8f, 2.2f, 1.8f)
+                    drawMesh(MeshFactory.gemMesh, itemM, 0xFFFFD600.toInt()) // Sparkling Golden Yellow
+                }
+                ItemType.MEGA_STAR -> {
+                    // Grand Rainbow Mega Star
+                    Matrix.scaleM(itemM, 0, 2.6f, 3.2f, 2.6f)
+                    drawMesh(MeshFactory.gemMesh, itemM, 0xFFFF007F.toInt()) // Neon Magenta
+                }
+                ItemType.NITRO_BOOST -> {
+                    // 3D Nitro Fuel Canister Cylinder + Cap
+                    val canM = itemM.clone()
+                    Matrix.scaleM(canM, 0, 1.2f, 1.8f, 1.2f)
+                    drawCylinder(canM, 0xFF00E5FF.toInt()) // Cyan Fuel Body
+
+                    val capM = itemM.clone()
+                    Matrix.translateM(capM, 0, 0f, 1.0f, 0f)
+                    Matrix.scaleM(capM, 0, 0.75f, 0.35f, 0.75f)
+                    drawCylinder(capM, 0xFFFF6D00.toInt()) // Blaze Orange Valve
                 }
             }
         }
@@ -177,7 +280,6 @@ class GLRenderer(
         val customProf = carConfig.getSafeCustomProfile()
 
         if (carConfig.isCustomDrawnBody && customProf.isNotEmpty()) {
-            // User Custom Drawn Silhouette 3D Body
             val numSegments = customProf.size
             val carLength = 4.4f
             val segLength = carLength / numSegments
@@ -309,6 +411,24 @@ class GLRenderer(
         Matrix.scaleM(tlM, 0, 2.10f, 0.10f, 0.08f)
         drawCube(tlM, 0xFFFF0055.toInt())
 
+        // Dual Nitro Turbo Exhaust Flames
+        if (vehicle.isNitroActive) {
+            val flameFlicker = Random.nextFloat() * 0.4f
+            // Left Plume
+            val flameLM = carM.clone()
+            Matrix.translateM(flameLM, 0, -0.6f, 0.15f, 2.5f)
+            Matrix.rotateM(flameLM, 0, 90f, 1f, 0f, 0f)
+            Matrix.scaleM(flameLM, 0, 0.45f, 1.5f + flameFlicker, 0.45f)
+            drawCone(flameLM, 0xFF00E5FF.toInt()) // Cyan Core
+
+            // Right Plume
+            val flameRM = carM.clone()
+            Matrix.translateM(flameRM, 0, 0.6f, 0.15f, 2.5f)
+            Matrix.rotateM(flameRM, 0, 90f, 1f, 0f, 0f)
+            Matrix.scaleM(flameRM, 0, 0.45f, 1.5f + flameFlicker, 0.45f)
+            drawCone(flameRM, 0xFFFF5722.toInt()) // Blaze Orange Core
+        }
+
         // 4 Round 16-Sided 3D Cylindrical Wheels, Rims & Brembo Calipers
         val wheelPositions = arrayOf(
             Pair(-1.22f, -1.35f), Pair(1.22f, -1.35f),
@@ -324,7 +444,7 @@ class GLRenderer(
             Matrix.translateM(wheelM, 0, wx, suspY, wz)
 
             if (i < 2) {
-                Matrix.rotateM(wheelM, 0, vehicle.steeringInput * 30f, 0f, 1f, 0f)
+                Matrix.rotateM(wheelM, 0, vehicle.smoothedSteer * 30f, 0f, 1f, 0f)
             }
             Matrix.rotateM(wheelM, 0, vehicle.wheelRotationDeg[i], 1f, 0f, 0f)
             // Rotate Cylinder so its axis aligns with X (left-right wheel axis)

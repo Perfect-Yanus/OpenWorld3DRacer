@@ -29,25 +29,52 @@ class Camera3D {
     var orbitPitch = 20f
     var orbitDistance = 7.5f
 
+    // Dynamic FOV for speed & stunts
+    var currentFov = 60.0f
+    private var viewWidth = 1
+    private var viewHeight = 1
+
     val viewMatrix = FloatArray(16)
     val projectionMatrix = FloatArray(16)
     val mvpMatrix = FloatArray(16)
 
     fun updateProjection(width: Int, height: Int) {
-        val aspect = width.toFloat() / height.toFloat()
-        Matrix.perspectiveM(projectionMatrix, 0, 60f, aspect, 0.2f, 1500f)
+        viewWidth = width
+        viewHeight = height
+        val aspect = width.toFloat() / height.toFloat().coerceAtLeast(1f)
+        Matrix.perspectiveM(projectionMatrix, 0, currentFov, aspect, 0.2f, 1500f)
     }
 
-    fun updateCamera(carX: Float, carY: Float, carZ: Float, carHeadingDeg: Float, dt: Float) {
+    fun updateCamera(
+        carX: Float,
+        carY: Float,
+        carZ: Float,
+        carHeadingDeg: Float,
+        dt: Float,
+        isAirborne: Boolean = false,
+        isNitro: Boolean = false,
+        airTime: Float = 0f
+    ) {
+        // Dynamic FOV interpolation
+        val targetFov = if (isNitro) 74.0f else (if (isAirborne) 66.0f else 60.0f)
+        currentFov += (targetFov - currentFov) * (dt * 6.0f).coerceAtMost(1.0f)
+        val aspect = viewWidth.toFloat() / viewHeight.toFloat().coerceAtLeast(1f)
+        Matrix.perspectiveM(projectionMatrix, 0, currentFov, aspect, 0.2f, 1500f)
+
         when (mode) {
             CameraMode.CHASE_CAM -> {
                 val rad = Math.toRadians(carHeadingDeg.toDouble()).toFloat()
-                val idealEyeX = carX - sin(rad) * 9.0f
-                val idealEyeY = carY + 3.8f
-                val idealEyeZ = carZ + cos(rad) * 9.0f
+
+                // When airborne or in nitro, dynamically adjust camera distance & height
+                val chaseDist = if (isAirborne) (10.5f + (airTime * 1.5f).coerceAtMost(3.5f)) else (if (isNitro) 9.8f else 8.5f)
+                val chaseHeight = if (isAirborne) 4.6f else 3.4f
+
+                val idealEyeX = carX - sin(rad) * chaseDist
+                val idealEyeY = carY + chaseHeight
+                val idealEyeZ = carZ + cos(rad) * chaseDist
 
                 // Smooth camera follow interpolation (Lerp)
-                val alpha = (dt * 7.0f).coerceIn(0.05f, 0.40f)
+                val alpha = (dt * 8.0f).coerceIn(0.06f, 0.45f)
                 eyeX += (idealEyeX - eyeX) * alpha
                 eyeY += (idealEyeY - eyeY) * alpha
                 eyeZ += (idealEyeZ - eyeZ) * alpha

@@ -12,7 +12,12 @@ enum class ObjectType {
     TREE,
     LAMPPOST,
     SPEEDBUMP,
-    GRASS
+    GRASS,
+    JUMP_RAMP,      // Stunt launch ramp wedge
+    BOOST_PAD,      // Floor speed acceleration pad
+    BARRIER,        // Track side barrier / guardrail
+    ARCH_GATE,      // Neon overhead gantry
+    RUMBLE_STRIP    // Checkered red/white curb
 }
 
 data class EnvironmentObject(

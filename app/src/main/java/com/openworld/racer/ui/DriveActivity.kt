@@ -2,6 +2,7 @@ package com.openworld.racer.ui
 
 import android.annotation.SuppressLint
 import android.content.Intent
+import android.graphics.Color
 import android.opengl.GLSurfaceView
 import android.os.Bundle
 import android.view.MotionEvent
@@ -78,6 +79,7 @@ class DriveActivity : AppCompatActivity(), GLRenderer.RenderListener {
 
     @SuppressLint("ClickableViewAccessibility")
     private fun setupTouchControls() {
+        // Progressive Smooth Steering
         binding.btnSteerLeft.setOnTouchListener { _, event ->
             when (event.action) {
                 MotionEvent.ACTION_DOWN, MotionEvent.ACTION_MOVE -> vehicle.steeringInput = -1.0f
@@ -94,6 +96,7 @@ class DriveActivity : AppCompatActivity(), GLRenderer.RenderListener {
             true
         }
 
+        // Gas Accelerator
         binding.btnGas.setOnTouchListener { _, event ->
             when (event.action) {
                 MotionEvent.ACTION_DOWN, MotionEvent.ACTION_MOVE -> vehicle.throttleInput = 1.0f
@@ -102,6 +105,7 @@ class DriveActivity : AppCompatActivity(), GLRenderer.RenderListener {
             true
         }
 
+        // Brake / Reverse
         binding.btnBrake.setOnTouchListener { _, event ->
             when (event.action) {
                 MotionEvent.ACTION_DOWN, MotionEvent.ACTION_MOVE -> vehicle.brakeInput = 1.0f
@@ -110,10 +114,20 @@ class DriveActivity : AppCompatActivity(), GLRenderer.RenderListener {
             true
         }
 
+        // Drift Powerslide
         binding.btnHandbrake.setOnTouchListener { _, event ->
             when (event.action) {
                 MotionEvent.ACTION_DOWN, MotionEvent.ACTION_MOVE -> vehicle.handbrakeInput = true
                 MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> vehicle.handbrakeInput = false
+            }
+            true
+        }
+
+        // NITRO Turbo Boost
+        binding.btnNitro.setOnTouchListener { _, event ->
+            when (event.action) {
+                MotionEvent.ACTION_DOWN, MotionEvent.ACTION_MOVE -> vehicle.nitroButtonInput = true
+                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> vehicle.nitroButtonInput = false
             }
             true
         }
@@ -124,21 +138,67 @@ class DriveActivity : AppCompatActivity(), GLRenderer.RenderListener {
         powerKw: Float,
         socPercent: Float,
         surface: String,
-        isDrifting: Boolean
+        isDrifting: Boolean,
+        nitroGauge: Float,
+        isNitroActive: Boolean,
+        totalScore: Int,
+        comboMultiplier: Int,
+        isAirborne: Boolean,
+        airTimeSeconds: Float,
+        stuntFeedbackText: String
     ) {
         runOnUiThread {
+            // Speedometer with dynamic high-speed glow
             binding.tvSpeedometer.text = String.format(Locale.getDefault(), "%.0f km/h", speedKmh)
-            binding.tvPowerKw.text = String.format(Locale.getDefault(), "%.0f kW", powerKw)
+            binding.tvSpeedometer.setTextColor(
+                when {
+                    isNitroActive -> Color.parseColor("#FF007F") // Neon Magenta in Nitro
+                    speedKmh > 120f -> Color.parseColor("#FFD600") // Neon Amber
+                    else -> Color.parseColor("#00E5FF") // Cyan
+                }
+            )
+
+            // Score & Combo
+            binding.tvScore.text = String.format(Locale.getDefault(), "SCORE: %,d", totalScore)
+            binding.tvCombo.text = if (comboMultiplier > 1) {
+                String.format(Locale.getDefault(), "🔥 COMBO x%d!", comboMultiplier)
+            } else {
+                "COMBO: x1"
+            }
+            binding.tvCombo.setTextColor(if (comboMultiplier > 1) Color.parseColor("#FF007F") else Color.parseColor("#94A3B8"))
+
+            // Nitro Bar
+            binding.pbNitro.progress = nitroGauge.toInt()
+            binding.tvNitroLabel.text = if (isNitroActive) {
+                "🔥 NITRO BURST!"
+            } else {
+                String.format(Locale.getDefault(), "⚡ NITRO %.0f%%", nitroGauge)
+            }
+            binding.tvNitroLabel.setTextColor(if (isNitroActive) Color.parseColor("#FF007F") else Color.parseColor("#00FF88"))
+
+            // Nitro Button Readiness Glow
+            binding.btnNitro.alpha = if (nitroGauge >= 20.0f || isNitroActive) 1.0f else 0.45f
+
+            // Battery %
             binding.tvBatterySoc.text = String.format(Locale.getDefault(), "🔋 %.0f%%", socPercent)
 
+            // Surface Indicator
             binding.tvSurfaceType.text = when (surface) {
+                "RAMP" -> "🚀 STUNT RAMP"
+                "BOOST" -> "⚡ BOOST PAD"
                 "SIDEWALK" -> "🏙️ SIDEWALK"
                 "DIRT" -> "🪵 DIRT / OFFROAD"
                 "WATER" -> "🌊 WATER / RIVER"
                 else -> "🛣️ ASPHALT"
             }
 
-            binding.tvDriftIndicator.visibility = if (isDrifting) View.VISIBLE else View.GONE
+            // Stunt / Airtime Banner Popup
+            if (stuntFeedbackText.isNotEmpty()) {
+                binding.tvStuntBanner.text = stuntFeedbackText
+                binding.tvStuntBanner.visibility = View.VISIBLE
+            } else {
+                binding.tvStuntBanner.visibility = View.GONE
+            }
         }
     }
 
