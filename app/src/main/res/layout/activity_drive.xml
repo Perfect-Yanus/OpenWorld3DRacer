@@ -104,6 +104,76 @@
             android:textSize="13sp" />
     </LinearLayout>
 
+    <!-- Police Chase HUD (Top Center) -->
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="16dp"
+        android:background="#CC1A0A0A"
+        android:orientation="vertical"
+        android:paddingHorizontal="16dp"
+        android:paddingVertical="8dp">
+
+        <TextView
+            android:id="@+id/tvHealthBar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="❤️ HEALTH: 100%"
+            android:textColor="#00FF88"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/tvWantedLevel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="⭐ WANTED: ★☆☆☆☆"
+            android:textColor="#FFD600"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/tvPoliceCount"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="🚔 POLICE: 0"
+            android:textColor="#FF1744"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/tvChaseTime"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="⏱️ CHASE: 0.0s"
+            android:textColor="#00E5FF"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:visibility="gone" />
+    </LinearLayout>
+
+    <!-- Time Attack Timer (Top Center) -->
+    <TextView
+        android:id="@+id/tvTimeAttack"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="16dp"
+        android:background="#CC0A0F1D"
+        android:paddingHorizontal="24dp"
+        android:paddingVertical="8dp"
+        android:text="⏱️ TIME: 120.0s"
+        android:textColor="#00E5FF"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:visibility="gone" />
+
     <!-- Center Stunt Banner Popup (Airtime, Stunts, Item Pickup) -->
     <TextView
         android:id="@+id/tvStuntBanner"

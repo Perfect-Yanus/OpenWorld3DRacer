@@ -12,8 +12,13 @@ import com.openworld.racer.audio.SoundManager
 import com.openworld.racer.databinding.ActivityDriveBinding
 import com.openworld.racer.engine3d.CameraMode
 import com.openworld.racer.engine3d.GLRenderer
+import com.openworld.racer.engine3d.ParticleSystem
+import com.openworld.racer.engine3d.VisualEffects
+import com.openworld.racer.model.GameMode
+import com.openworld.racer.model.GameModeManager
 import com.openworld.racer.model.GameSaveManager
 import com.openworld.racer.model.VehicleConfig
+import com.openworld.racer.physics.PoliceManager
 import com.openworld.racer.physics.RaycastVehicle
 import java.util.Locale
 
@@ -26,6 +31,12 @@ class DriveActivity : AppCompatActivity(), GLRenderer.RenderListener {
 
     private lateinit var vehicle: RaycastVehicle
     private lateinit var renderer: GLRenderer
+    private val visualEffects = VisualEffects()
+
+    private var isPoliceChase = false
+    private var isTimeAttack = false
+    private var timeAttackTime = 120f // 2 minutes
+    private var bustedShown = false
 
     @SuppressLint("ClickableViewAccessibility")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -36,6 +47,16 @@ class DriveActivity : AppCompatActivity(), GLRenderer.RenderListener {
         saveManager = GameSaveManager(this)
         currentConfig = saveManager.loadVehicleConfig()
 
+        isPoliceChase = GameModeManager.getMode() == GameMode.POLICE_CHASE
+        isTimeAttack = GameModeManager.getMode() == GameMode.TIME_ATTACK
+
+        if (isPoliceChase) {
+            GameModeManager.startChase()
+            GameModeManager.resetHealth()
+            GameModeManager.resetWantedLevel()
+            PoliceManager.setMaxPolice(3)
+        }
+
         vehicle = RaycastVehicle(currentConfig)
         renderer = GLRenderer(this, vehicle, soundManager = soundManager, listener = this)
 
@@ -45,6 +66,7 @@ class DriveActivity : AppCompatActivity(), GLRenderer.RenderListener {
         binding.glSurfaceDrive.renderMode = GLSurfaceView.RENDERMODE_CONTINUOUSLY
 
         setupTouchControls()
+        setupPoliceHUD()
 
         // Camera Switch Button
         binding.btnCamSwitch.setOnClickListener {
@@ -67,6 +89,12 @@ class DriveActivity : AppCompatActivity(), GLRenderer.RenderListener {
         // Reset Car Button
         binding.btnResetCar.setOnClickListener {
             vehicle.resetPosition(0f, 0.2f, 0f, 0f)
+            visualEffects.reset()
+            if (isPoliceChase) {
+                GameModeManager.resetHealth()
+                GameModeManager.resetWantedLevel()
+                PoliceManager.clearAll()
+            }
         }
 
         // Return to Garage
@@ -74,6 +102,31 @@ class DriveActivity : AppCompatActivity(), GLRenderer.RenderListener {
             val intent = Intent(this, GarageActivity::class.java)
             startActivity(intent)
             finish()
+        }
+    }
+
+    private fun setupPoliceHUD() {
+        if (isPoliceChase) {
+            binding.tvHealthBar.visibility = View.VISIBLE
+            binding.tvWantedLevel.visibility = View.VISIBLE
+            binding.tvPoliceCount.visibility = View.VISIBLE
+            binding.tvChaseTime.visibility = View.VISIBLE
+            binding.tvHealthBar.text = "❤️ HEALTH: 100%"
+            binding.tvWantedLevel.text = "⭐ WANTED: ★☆☆☆☆"
+            binding.tvPoliceCount.text = "🚔 POLICE: 0"
+            binding.tvChaseTime.text = "⏱️ CHASE: 0.0s"
+        } else {
+            binding.tvHealthBar.visibility = View.GONE
+            binding.tvWantedLevel.visibility = View.GONE
+            binding.tvPoliceCount.visibility = View.GONE
+            binding.tvChaseTime.visibility = View.GONE
+        }
+
+        if (isTimeAttack) {
+            binding.tvTimeAttack.visibility = View.VISIBLE
+            binding.tvTimeAttack.text = "⏱️ TIME: 120.0s"
+        } else {
+            binding.tvTimeAttack.visibility = View.GONE
         }
     }
 
@@ -148,13 +201,56 @@ class DriveActivity : AppCompatActivity(), GLRenderer.RenderListener {
         stuntFeedbackText: String
     ) {
         runOnUiThread {
+            // Update visual effects
+            visualEffects.update(0.016f, speedKmh, isNitroActive, isAirborne, isDrifting)
+
+            // Update police chase
+            if (isPoliceChase) {
+                PoliceManager.updateAll(0.016f, vehicle)
+                GameModeManager.updateChaseTimer(0.016f)
+
+                // Check ram damage
+                val damage = PoliceManager.checkRamDamage(vehicle.posX, vehicle.posZ)
+                if (damage > 0f) {
+                    GameModeManager.damage(damage)
+                    visualEffects.triggerImpact(1.5f)
+                    ParticleSystem.spawnSparks(vehicle.posX, vehicle.posY, vehicle.posZ, 15)
+                }
+
+                // Increase wanted level over time
+                if (GameModeManager.chaseTime > 30f && GameModeManager.wantedLevel < 1) {
+                    GameModeManager.increaseWantedLevel()
+                } else if (GameModeManager.chaseTime > 60f && GameModeManager.wantedLevel < 2) {
+                    GameModeManager.increaseWantedLevel()
+                } else if (GameModeManager.chaseTime > 120f && GameModeManager.wantedLevel < 3) {
+                    GameModeManager.increaseWantedLevel()
+                }
+
+                // Check busted
+                if (GameModeManager.isBusted() && !bustedShown) {
+                    bustedShown = true
+                    binding.tvStuntBanner.text = "🚔 BUSTED! GAME OVER"
+                    binding.tvStuntBanner.visibility = View.VISIBLE
+                }
+            }
+
+            // Update time attack
+            if (isTimeAttack) {
+                timeAttackTime -= 0.016f
+                if (timeAttackTime <= 0f) {
+                    timeAttackTime = 0f
+                    binding.tvStuntBanner.text = "⏱️ TIME'S UP!"
+                    binding.tvStuntBanner.visibility = View.VISIBLE
+                }
+            }
+
             // Speedometer with dynamic high-speed glow
             binding.tvSpeedometer.text = String.format(Locale.getDefault(), "%.0f km/h", speedKmh)
             binding.tvSpeedometer.setTextColor(
                 when {
-                    isNitroActive -> Color.parseColor("#FF007F") // Neon Magenta in Nitro
-                    speedKmh > 120f -> Color.parseColor("#FFD600") // Neon Amber
-                    else -> Color.parseColor("#00E5FF") // Cyan
+                    isNitroActive -> Color.parseColor("#FF007F")
+                    speedKmh > 120f -> Color.parseColor("#FFD600")
+                    else -> Color.parseColor("#00E5FF")
                 }
             )
 
@@ -196,9 +292,44 @@ class DriveActivity : AppCompatActivity(), GLRenderer.RenderListener {
             if (stuntFeedbackText.isNotEmpty()) {
                 binding.tvStuntBanner.text = stuntFeedbackText
                 binding.tvStuntBanner.visibility = View.VISIBLE
-            } else {
+            } else if (!bustedShown && timeAttackTime > 0f) {
                 binding.tvStuntBanner.visibility = View.GONE
             }
+
+            // Police HUD updates
+            if (isPoliceChase) {
+                val health = GameModeManager.health
+                binding.tvHealthBar.text = "❤️ HEALTH: ${health.toInt()}%"
+                binding.tvHealthBar.setTextColor(
+                    when {
+                        health > 60f -> Color.parseColor("#00FF88")
+                        health > 30f -> Color.parseColor("#FFD600")
+                        else -> Color.parseColor("#FF1744")
+                    }
+                )
+
+                val wanted = GameModeManager.wantedLevel
+                binding.tvWantedLevel.text = "⭐ WANTED: " + "★".repeat(wanted) + "☆".repeat(5 - wanted)
+                binding.tvPoliceCount.text = "🚔 POLICE: ${PoliceManager.getActiveCount()}"
+                binding.tvChaseTime.text = String.format(Locale.getDefault(), "⏱️ CHASE: %.1fs", GameModeManager.chaseTime)
+            }
+
+            // Time Attack HUD
+            if (isTimeAttack) {
+                binding.tvTimeAttack.text = String.format(Locale.getDefault(), "⏱️ TIME: %.1fs", timeAttackTime)
+                binding.tvTimeAttack.setTextColor(
+                    if (timeAttackTime < 30f) Color.parseColor("#FF1744") else Color.parseColor("#00E5FF")
+                )
+            }
+
+            // Spawn particles
+            if (isDrifting && speedKmh > 20f) {
+                ParticleSystem.spawnDriftSmoke(vehicle.posX, vehicle.posY, vehicle.posZ, vehicle.headingAngle)
+            }
+            if (isNitroActive) {
+                ParticleSystem.spawnNitroFlame(vehicle.posX, vehicle.posY, vehicle.posZ, vehicle.headingAngle)
+            }
+            ParticleSystem.update(0.016f)
         }
     }
 
@@ -212,5 +343,11 @@ class DriveActivity : AppCompatActivity(), GLRenderer.RenderListener {
         super.onPause()
         binding.glSurfaceDrive.onPause()
         soundManager.stopAudio()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        PoliceManager.clearAll()
+        ParticleSystem.clear()
     }
 }

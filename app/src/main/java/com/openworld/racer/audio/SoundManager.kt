@@ -13,6 +13,7 @@ class SoundManager {
     private var driftAudioTrack: AudioTrack? = null
     private var sfxAudioTrack: AudioTrack? = null
     private var bgmAudioTrack: AudioTrack? = null
+    private var sirenAudioTrack: AudioTrack? = null
 
     @Volatile
     private var isPlaying = false
@@ -25,9 +26,10 @@ class SoundManager {
     @Volatile var isInWater = false
     @Volatile var isCollided = false
     @Volatile var isNitroActive = false
+    @Volatile var isPoliceChase = false
 
     // Stunt / Item SFX Triggers
-    @Volatile private var sfxTrigger = 0 // 1: item chime, 2: jump launch, 3: landing thud
+    @Volatile private var sfxTrigger = 0 // 1: item chime, 2: jump launch, 3: landing thud, 4: police siren, 5: ram damage
 
     private val sampleRate = 44100 // Standard 44.1kHz sample rate
 
@@ -40,6 +42,7 @@ class SoundManager {
             initDriftSynth()
             initSfxSynth()
             initBgmSynth()
+            initSirenSynth()
         } catch (e: Throwable) {
             e.printStackTrace()
         }
@@ -72,6 +75,12 @@ class SoundManager {
                 }
                 it.release()
             }
+            sirenAudioTrack?.let {
+                if (it.state == AudioTrack.STATE_INITIALIZED) {
+                    it.stop()
+                }
+                it.release()
+            }
         } catch (e: Throwable) {
             e.printStackTrace()
         }
@@ -79,6 +88,7 @@ class SoundManager {
         driftAudioTrack = null
         sfxAudioTrack = null
         bgmAudioTrack = null
+        sirenAudioTrack = null
     }
 
     private fun createAudioTrack(): AudioTrack? {
@@ -212,9 +222,11 @@ class SoundManager {
                     if (trigger != 0) {
                         sfxTrigger = 0
                         when (trigger) {
-                            1 -> playMelodicChime() // Item Pickup Chime
-                            2 -> playLaunchWhoosh() // Jump Ramp Launch
-                            3 -> playImpactThud()   // Landing Thud
+                            1 -> playMelodicChime()
+                            2 -> playLaunchWhoosh()
+                            3 -> playImpactThud()
+                            4 -> playSirenSound()
+                            5 -> playRamDamageSound()
                         }
                     } else {
                         buffer.fill(0)
@@ -331,5 +343,81 @@ class SoundManager {
 
     fun triggerCollisionImpact() {
         isCollided = true
+    }
+
+    fun playPoliceSiren() {
+        sfxTrigger = 4
+    }
+
+    fun playRamDamage() {
+        sfxTrigger = 5
+    }
+
+    private fun initSirenSynth() {
+        sirenAudioTrack = createAudioTrack() ?: return
+        try {
+            sirenAudioTrack?.play()
+        } catch (e: Throwable) {
+            return
+        }
+
+        thread(name = "SirenSoundSynthThread") {
+            val buffer = ShortArray(1024)
+            var phase = 0.0
+            var sirenTimer = 0.0
+
+            while (isPlaying) {
+                try {
+                    if (isPoliceChase) {
+                        sirenTimer += 0.015
+                        val freq = if (sirenTimer % 1.0 < 0.5) 700.0 else 950.0
+                        val phaseInc = (2.0 * Math.PI * freq) / sampleRate
+
+                        for (i in buffer.indices) {
+                            phase += phaseInc
+                            if (phase > 2.0 * Math.PI) phase -= 2.0 * Math.PI
+                            val sample = sin(phase) * 8000.0
+                            buffer[i] = sample.toInt().coerceIn(-32767, 32767).toShort()
+                        }
+                        sirenAudioTrack?.write(buffer, 0, buffer.size)
+                    } else {
+                        buffer.fill(0)
+                        sirenAudioTrack?.write(buffer, 0, buffer.size)
+                    }
+                    Thread.sleep(15)
+                } catch (e: Throwable) {
+                    break
+                }
+            }
+        }
+    }
+
+    private fun playSirenSound() {
+        val length = 4400
+        val buffer = ShortArray(length)
+        for (i in 0 until length) {
+            val t = i.toDouble() / length
+            val freq = 700.0 + 250.0 * sin(t * 2.0 * Math.PI)
+            val phase = (2.0 * Math.PI * freq * i) / sampleRate
+            val env = sin(t * Math.PI)
+            val sample = sin(phase) * env * 12000.0
+            buffer[i] = sample.toInt().coerceIn(-32767, 32767).toShort()
+        }
+        sfxAudioTrack?.write(buffer, 0, buffer.size)
+    }
+
+    private fun playRamDamageSound() {
+        val length = 2200
+        val buffer = ShortArray(length)
+        for (i in 0 until length) {
+            val t = i.toDouble() / length
+            val freq = 80.0 * (1.0 - t * 0.5)
+            val phase = (2.0 * Math.PI * freq * i) / sampleRate
+            val noise = (Random.nextFloat() * 2f - 1f) * 0.6f
+            val env = (1.0 - t) * (1.0 - t)
+            val sample = (sin(phase) * 0.7 + noise) * env * 26000.0
+            buffer[i] = sample.toInt().coerceIn(-32767, 32767).toShort()
+        }
+        sfxAudioTrack?.write(buffer, 0, buffer.size)
     }
 }

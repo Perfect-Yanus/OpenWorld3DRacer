@@ -15,7 +15,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="🏎️ 3D OPEN WORLD RACER"
+            android:text="🏎️ 3D OPENWORLD RACER"
             android:textColor="@color/neon_blue"
             android:textSize="36sp"
             android:textStyle="bold" />
@@ -28,14 +28,36 @@
             android:textColor="@color/white"
             android:textSize="16sp" />
 
-        <!-- Buttons -->
+        <!-- Game Mode Buttons -->
         <Button
             android:id="@+id/btnStartDrive"
             android:layout_width="280dp"
             android:layout_height="65dp"
             android:layout_marginTop="36dp"
             android:backgroundTint="@color/neon_blue"
-            android:text="🏎️ START FREE DRIVE"
+            android:text="🏎️ FREE RIDE"
+            android:textColor="@color/black"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <Button
+            android:id="@+id/btnPoliceChase"
+            android:layout_width="280dp"
+            android:layout_height="65dp"
+            android:layout_marginTop="12dp"
+            android:backgroundTint="#FF1744"
+            android:text="🚔 POLICE CHASE"
+            android:textColor="@color/white"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <Button
+            android:id="@+id/btnTimeAttack"
+            android:layout_width="280dp"
+            android:layout_height="65dp"
+            android:layout_marginTop="12dp"
+            android:backgroundTint="@color/neon_green"
+            android:text="⏱️ TIME ATTACK"
             android:textColor="@color/black"
             android:textSize="18sp"
             android:textStyle="bold" />
@@ -44,7 +66,7 @@
             android:id="@+id/btnOpenGarage"
             android:layout_width="280dp"
             android:layout_height="65dp"
-            android:layout_marginTop="16dp"
+            android:layout_marginTop="12dp"
             android:backgroundTint="@color/card_bg"
             android:text="🔧 EV CUSTOM GARAGE"
             android:textColor="@color/neon_green"

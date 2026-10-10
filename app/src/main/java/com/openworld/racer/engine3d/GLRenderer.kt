@@ -10,9 +10,13 @@ import com.openworld.racer.model.CollectibleItem
 import com.openworld.racer.model.EnvironmentObject
 import com.openworld.racer.model.ItemType
 import com.openworld.racer.model.ObjectType
+import com.openworld.racer.physics.PoliceCar
+import com.openworld.racer.physics.PoliceManager
 import com.openworld.racer.physics.RaycastVehicle
 import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.opengles.GL10
+import kotlin.math.sin
+import kotlin.math.cos
 import kotlin.random.Random
 
 class GLRenderer(
@@ -116,7 +120,13 @@ class GLRenderer(
             // 7. Render 3D EV Supercar & Nitro Flame Exhausts
             renderElectricVehicle()
 
-            // 8. Notify HUD UI
+            // 8. Render Police Cars (if active)
+            renderPoliceCars()
+
+            // 9. Render Particles
+            renderParticles()
+
+            // 10. Notify HUD UI
             listener?.onFrameUpdate(
                 vehicle.speedKmh,
                 vehicle.motorPowerKwCurrent,
@@ -470,6 +480,59 @@ class GLRenderer(
             Matrix.translateM(caliperM, 0, 0.20f, 0.0f, 0.0f)
             Matrix.scaleM(caliperM, 0, wheelDiameterScale * 0.35f, 0.32f, wheelDiameterScale * 0.35f)
             drawCylinder(caliperM, 0xFFEF4444.toInt())
+        }
+    }
+
+    private fun renderPoliceCars() {
+        val policeCars = PoliceManager.getPoliceCars()
+        for (car in policeCars) {
+            val carM = FloatArray(16)
+            Matrix.setIdentityM(carM, 0)
+            Matrix.translateM(carM, 0, car.posX, car.posY + 0.45f, car.posZ)
+            Matrix.rotateM(carM, 0, car.headingAngle, 0f, 1f, 0f)
+
+            // Police car body (black and white)
+            val bodyM = carM.clone()
+            Matrix.scaleM(bodyM, 0, 2.2f, 0.5f, 4.4f)
+            drawCube(bodyM, 0xFF1A1A1A.toInt())
+
+            // White doors
+            val doorM = carM.clone()
+            Matrix.translateM(doorM, 0, 0f, 0.1f, 0f)
+            Matrix.scaleM(doorM, 0, 2.25f, 0.35f, 1.8f)
+            drawCube(doorM, 0xFFEEEEEE.toInt())
+
+            // Light bar (alternating red/blue)
+            val lightColor = car.getSirenColor()
+            val lightM = carM.clone()
+            Matrix.translateM(lightM, 0, 0f, 0.65f, 0f)
+            Matrix.scaleM(lightM, 0, 1.6f, 0.15f, 0.4f)
+            drawCube(lightM, lightColor)
+
+            // Wheels
+            val wheelPositions = arrayOf(
+                Pair(-1.1f, -1.3f), Pair(1.1f, -1.3f),
+                Pair(-1.1f, 1.3f), Pair(1.1f, 1.3f)
+            )
+            for ((wx, wz) in wheelPositions) {
+                val wheelM = carM.clone()
+                Matrix.translateM(wheelM, 0, wx, -0.15f, wz)
+                Matrix.rotateM(wheelM, 0, 90f, 0f, 0f, 1f)
+                Matrix.scaleM(wheelM, 0, 0.4f, 0.35f, 0.4f)
+                drawCylinder(wheelM, 0xFF111111.toInt())
+            }
+        }
+    }
+
+    private fun renderParticles() {
+        val particles = ParticleSystem.getParticles()
+        for (p in particles) {
+            val pM = FloatArray(16)
+            Matrix.setIdentityM(pM, 0)
+            Matrix.translateM(pM, 0, p.posX, p.posY, p.posZ)
+            val s = p.size * p.getAlpha()
+            Matrix.scaleM(pM, 0, s, s, s)
+            drawCube(pM, p.color)
         }
     }
 
